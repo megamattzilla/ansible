@@ -1,0 +1,25 @@
+- name: Backup UCS File
+  hosts: ucsBackupTargets
+  connection: local
+  vars:
+    provider:
+      server: "{{ hostvars[inventory_hostname].ansible_host }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      validate_certs: false
+      server_port: 443
+  gather_facts: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Create UCS backup directory if it does not exist
+      file:
+        path: "{{ ucs_dir }}"
+        state: directory
+    
+    - name: Download a new UCS
+      bigip_ucs_fetch:
+        src: cs_backup.ucs
+        dest: "{{ ucs_dir }}/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.ucs"
+        provider: "{{ provider }}"
+      delegate_to: localhost
