@@ -70,7 +70,7 @@ password: !vault |
           31623262363565653164393363316362393562353730313139613935333562313938
 ```
 ## Not encrypting admin password <a name="no_password_encrypt"></a>
-Its recommended to use ansible vault to encrypt the Big-IP admin password value while its stored in rest (ansible vault does not encrypt password in use or in transit- however ansible does not log the password by default and the F5 API is utilizing HTTPS to encrypt in transit), however this is not required. If you want to skip ansible vault encryption, just replace the `password:` var in group_vars/ucsBackupTargets.yaml with your password.
+Its recommended to use ansible vault to encrypt the Big-IP admin password value while its stored in rest, however this is not required. Ansible vault does not encrypt password in use or in transit. It's worth noting ansible does not log the password by default and the F5 API is utilizing HTTPS to encrypt in transit. If you want to skip ansible vault encryption, just replace the `password:` var in group_vars/ucsBackupTargets.yaml with your password.
 Example:
 ```
 password: "supersecretpassword"
