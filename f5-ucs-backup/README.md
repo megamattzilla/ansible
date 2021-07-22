@@ -6,6 +6,7 @@
 4.  [Prepare Ansible Vault](#Prepare_Ansible_Vault)  
     a.  [No Vault Option](#no_password_encrypt)
 5.  [Run Ansible](#Run_Ansible)
+6.  [Coming Soon](#new_features)
 
 
 # Requirements <a name="Requirements"></a>
@@ -97,3 +98,8 @@ changed: [bigip01.example.local -> localhost]
 PLAY RECAP ***************************************************************************************
 bigip01.example.local   : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
+
+## Coming Soon! <a name="new_features"></a>
+- Delete UCS after x days option
+- SCP UCS to storage server option
+- What else? Feedback welcome!
