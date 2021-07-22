@@ -1,29 +1,39 @@
 # Easy and Simple F5 UCS backup via Ansible
 
-# Requirements
+1.  [Requirements](#Requirements)
+2.  [Ansible Setup](#Ansible_Setup)
+3.  [Prepare Inventory](#Prepare_Inventory)
+4.  [Prepare Ansible Vault](#Prepare_Ansible_Vault)  
+    a.  [No Vault Option](#no_password_encrypt)
+5.  [Run Ansible](#Run_Ansible)
+
+
+# Requirements <a name="Requirements"></a>
 - Have linux server with some disk space
 - Linux server has access to Big-IP REST API (TCP/443)
-- Linux server has internet access or access to software repos
+- Linux server has internet access or access to software repositories
 
-# Recommended Ansible Setup
+# Recommended Ansible Setup <a name="Ansible Setup"></a>
 - install python 3.8 (can sit along side current python version)
     - instructions: to install python 3.8 google your OS and `python3.8 install` should do the trick
-- install python virtual enviroment
+- install python virtual environment
     - `python3.8 -m pip install --user virtualenv` 
-- create python virtual enviroment
+- create python virtual environment
     - `python3.8 -m venv ~/python3.8-ansible` 
-- activate python enviroment
+- activate python environment
     - `source ~/python3.8-ansible/bin/activate`
 - update pip for good measure
     - `python -m pip install --upgrade pip`
-- install latest ansible via pip (in virtual enviroment)
+- install latest ansible via pip (in virtual environment)
     - `python -m pip install ansible`
 
-# Prepare inventory and var files 
-- Edit inventory file with your Big-IP hostnames and management IP address information
+# Prepare inventory and var files <a name="Prepare_Inventory"></a>
+- Edit inventory file with your Big-IP hostname(s) and management IP address information
 - Edit group_vars/ucsBackupTargets.yaml file with your F5 username and UCS backup directory
 
-# Prepare ansible vault
+# Prepare ansible vault <a name="Prepare_Ansible_Vault"></a>
+*if you do not want to use ansible vault to encrypt the F5 admin password skip to "not encrypting admin password". [No Vault Option](#no_password_encrypt)
+
 - Create encrypted F5 password by invoking ansible vault  
 `ansible-vault encrypt_string`  
         - You will be prompted to create a new vault password. This is the password you will specify at ansible runtime to decrypt the stored F5 password.  
@@ -58,8 +68,19 @@ password: !vault |
           6631333139323236630a353532643638343566306265333939643036313137623230626633326131
           31623262363565653164393363316362393562353730313139613935333562313938
 ```
-
-# Run the playbook
+## not encrypting admin password <a name="no_password_encrypt"></a>
+Its recommended to use ansible vault to encrypt the Big-IP admin password value while its stored in rest (ansible vault does not encrypt password in use or in transit- however ansible does not log the password by default and the F5 API is utilizing HTTPS to encrypt in transit), however this is not required. If you want to skip ansible vault encryption, just replace the `password:` var in group_vars/ucsBackupTargets.yaml with your password.
+Example:
+```
+password: "supersecretpassword"
+```
+An easy alternative is to store the password in a bash/shell variable.
+`export BIGIP_PASSWORD="supersecretpassword"`  
+Then configure the password var to use the bash variable:
+```
+password: "{{ lookup('env','BIGIP_PASSWORD') }}"
+```
+# Run the playbook <a name="Run_Ansible"></a>
 `ansible-playbook -i inventory ucs-backup.yaml --ask-vault-pass`   
 Expected output:  
 ```
