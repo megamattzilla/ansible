@@ -13,7 +13,7 @@
 - Linux server has access to Big-IP REST API (TCP/443)
 - Linux server has internet access or access to software repositories
 
-# Recommended Ansible Setup <a name="Ansible Setup"></a>
+# Recommended Ansible Setup <a name="Ansible_Setup"></a>
 - install python 3.8 (can sit along side current python version)
     - instructions: to install python 3.8 google your OS and `python3.8 install` should do the trick
 - install python virtual environment
@@ -68,7 +68,7 @@ password: !vault |
           6631333139323236630a353532643638343566306265333939643036313137623230626633326131
           31623262363565653164393363316362393562353730313139613935333562313938
 ```
-## not encrypting admin password <a name="no_password_encrypt"></a>
+## Not encrypting admin password <a name="no_password_encrypt"></a>
 Its recommended to use ansible vault to encrypt the Big-IP admin password value while its stored in rest (ansible vault does not encrypt password in use or in transit- however ansible does not log the password by default and the F5 API is utilizing HTTPS to encrypt in transit), however this is not required. If you want to skip ansible vault encryption, just replace the `password:` var in group_vars/ucsBackupTargets.yaml with your password.
 Example:
 ```
