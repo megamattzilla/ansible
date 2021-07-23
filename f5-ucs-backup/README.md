@@ -7,9 +7,11 @@
 2.  [Ansible Setup](#Ansible_Setup)
 3.  [Prepare Inventory](#Prepare_Inventory)
 4.  [Prepare Ansible Vault](#Prepare_Ansible_Vault)  
-    a.  [No Vault Option](#no_password_encrypt)
+    a.  [No Vault Option](#no_password_encrypt)  
+    b.  [Vault Password File (optional)](#Vault_Password_File)
 5.  [Run Ansible](#Run_Ansible)
-6.  [Coming Soon](#new_features)
+6.  [Automatic Backups](#Automatic_Backups)
+7.  [Coming Soon](#new_features)
 
 
 # Requirements <a name="Requirements"></a>
@@ -43,6 +45,7 @@
         - You will be prompted to create a new vault password. This is the password you will specify at ansible runtime to decrypt the stored F5 password.  
         - Next, you will be prompted for a string to encrypt. Just enter the F5 password value and then CTL-d.  
         - Take the vault output and replace the value in group_vars/ucsBackupTargets.yaml password: <value>  
+  
 Example
 ``` 
 ansible-vault encrypt_string
@@ -72,14 +75,29 @@ password: !vault |
           6631333139323236630a353532643638343566306265333939643036313137623230626633326131
           31623262363565653164393363316362393562353730313139613935333562313938
 ```
+
+(optional) Create a vault password file so you do not need to provide vault password at ansible run time. <a name="Vault_Password_File"></a>
+- Create directory to store the vault password file 
+    - `mkdir ~/.secrets`
+- Create vault password file
+    - `echo "your vault password here" > ~/.secrets/vault.secret`
+        - or `vi`/`nano`/`vim` to create the file
+- When you run ansible-playbook you can reference this file by adding the argument `--vault-password-file ~/.secrets/vault.secret`
+
 ## Not encrypting admin password <a name="no_password_encrypt"></a>
-Its recommended to use ansible vault to encrypt the Big-IP admin password value while its stored in rest, however this is not required. Ansible vault does not encrypt password in use or in transit. It's worth noting ansible does not log the password by default and the F5 API is utilizing HTTPS to encrypt in transit. If you want to skip ansible vault encryption, just replace the `password:` var in group_vars/ucsBackupTargets.yaml with your password.
+Its recommended to use ansible vault to encrypt the Big-IP admin password value while its stored in-rest, however this is not required.  
+
+Ansible vault does not encrypt secrets in-use or in-transit. It's worth noting ansible does not log the password by default and the F5 API is utilizing HTTPS to encrypt in-transit.  
+
+If you want to skip ansible vault encryption, just replace the `password:` var in group_vars/ucsBackupTargets.yaml with your password.  
+  
 Example:
 ```
 password: "supersecretpassword"
 ```
-An easy alternative is to store the password in a bash/shell variable.
+An easy alternative is to store the password in a bash/shell variable.  
 `export BIGIP_PASSWORD="supersecretpassword"`  
+
 Then configure the password var to use the bash variable:
 ```
 password: "{{ lookup('env','BIGIP_PASSWORD') }}"
@@ -101,6 +119,18 @@ changed: [bigip01.example.local -> localhost]
 PLAY RECAP ***************************************************************************************
 bigip01.example.local   : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
 ```
+# Schedule ansible to run UCS backups automatically <a name="Automatic_Backups"></a>
+The simplest way to run ansible at an interval would be to schedule a cron-job.  
+
+Alternatives would be to run an ansible workflow management software like AWX, Ansible Tower, or [Concord](https://concord.walmartlabs.com/docs/plugins/ansible.html).  
+
+Let's create a simple cron-job to run our ansible task at an interval   
+```bash
+* * * * * /usr/bin/env bash -c 'cd /home/user/github/ansible/f5-ucs-backup && source /home/user/python3.8-ansible/bin/activate && ansible-playbook -i inventory ucs-backup.yaml --vault-password-file /home/user/.secrets/vault.secret' >> /home/user/github/ansible/f5-ucs-backup/ansible.log 2>&1
+```
+*substitute your username and path as needed  
+*if you are using vault, you need to setup a password file to open the vault without user interaction. See [Vault Password File](#Vault_Password_File)  
+*all ansible output logged to ansible.log to review later if needed  
 
 ## Coming Soon! <a name="new_features"></a>
 - Delete UCS after x days option #DONE!
