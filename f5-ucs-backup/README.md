@@ -126,11 +126,12 @@ Alternatives would be to run an ansible workflow management software like AWX, A
 
 Let's create a simple cron-job to run our ansible task at an interval   
 ```bash
-* * * * * /usr/bin/env bash -c 'cd /home/user/github/ansible/f5-ucs-backup && source /home/user/python3.8-ansible/bin/activate && ansible-playbook -i inventory ucs-backup.yaml --vault-password-file /home/user/.secrets/vault.secret' >> /home/user/github/ansible/f5-ucs-backup/ansible.log 2>&1
+0 0 * * * /usr/bin/env bash -c 'cd /home/user/github/ansible/f5-ucs-backup && source /home/user/python3.8-ansible/bin/activate && ansible-playbook -i inventory ucs-backup.yaml --vault-password-file /home/user/.secrets/vault.secret' >> /home/user/github/ansible/f5-ucs-backup/ansible.log 2>&1
 ```
-*substitute your username and path as needed  
+*substitute your username and file path(s) as needed  
 *if you are using vault, you need to setup a password file to open the vault without user interaction. See [Vault Password File](#Vault_Password_File)  
 *all ansible output logged to ansible.log to review later if needed  
+*the above `0 0 * * *` will run ansible every night at midnight. Change this to your desired cron schedule. 
 
 ## Coming Soon! <a name="new_features"></a>
 - Delete UCS after x days option #DONE!
