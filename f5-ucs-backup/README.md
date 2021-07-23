@@ -34,9 +34,11 @@
     - ```python -m pip install ansible```
 
 # Prepare inventory and var files <a name="Prepare_Inventory"></a>
-- Edit inventory file with your Big-IP hostname(s) and management IP address information
-- Edit group_vars/ucsBackupTargets.yaml file with your F5 username and UCS backup directory
-
+- Clone this git repo to your linux machine
+    - `git clone git@github.com:megamattzilla/ansible.git` 
+- Edit inventory file with your Big-IP hostname(s) and management IP address information 
+- Edit group_vars/ucsBackupTargets.yaml file with your F5 username and UCS backup directory  
+*Pro-tip: Use [vscode SSH extension](https://code.visualstudio.com/learn/develop-cloud/ssh-lab-machines) to SSH and edit files on your remote linux machine 
 # Prepare ansible vault <a name="Prepare_Ansible_Vault"></a>
 *if you do not want to use ansible vault to encrypt the F5 admin password skip to "not encrypting admin password". [No Vault Option](#no_password_encrypt)
 
