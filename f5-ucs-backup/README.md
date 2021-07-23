@@ -23,15 +23,15 @@
 - install python 3.8 (can sit along side current python version)
     - instructions: to install python 3.8 google your OS and `python3.8 install` should do the trick
 - install python virtual environment
-    - `python3.8 -m pip install --user virtualenv` 
+    - ```python3.8 -m pip install --user virtualenv```
 - create python virtual environment
-    - `python3.8 -m venv ~/python3.8-ansible` 
+    - ```python3.8 -m venv ~/python3.8-ansible``` 
 - activate python environment
-    - `source ~/python3.8-ansible/bin/activate`
+    - ```source ~/python3.8-ansible/bin/activate```
 - update pip for good measure
-    - `python -m pip install --upgrade pip`
+    - ```python -m pip install --upgrade pip```
 - install latest ansible via pip (in virtual environment)
-    - `python -m pip install ansible`
+    - ```python -m pip install ansible```
 
 # Prepare inventory and var files <a name="Prepare_Inventory"></a>
 - Edit inventory file with your Big-IP hostname(s) and management IP address information
@@ -41,7 +41,7 @@
 *if you do not want to use ansible vault to encrypt the F5 admin password skip to "not encrypting admin password". [No Vault Option](#no_password_encrypt)
 
 - Create encrypted F5 password by invoking ansible vault  
-`ansible-vault encrypt_string`  
+```ansible-vault encrypt_string```  
         - You will be prompted to create a new vault password. This is the password you will specify at ansible runtime to decrypt the stored F5 password.  
         - Next, you will be prompted for a string to encrypt. Just enter the F5 password value and then CTL-d.  
         - Take the vault output and replace the value in group_vars/ucsBackupTargets.yaml password: <value>  
@@ -78,11 +78,11 @@ password: !vault |
 
 (optional) Create a vault password file so you do not need to provide vault password at ansible run time. <a name="Vault_Password_File"></a>
 - Create directory to store the vault password file 
-    - `mkdir ~/.secrets`
+    - ```mkdir ~/.secrets```
 - Create vault password file
-    - `echo "your vault password here" > ~/.secrets/vault.secret`
+    - ```echo "your vault password here" > ~/.secrets/vault.secret```
         - or `vi`/`nano`/`vim` to create the file
-- When you run ansible-playbook you can reference this file by adding the argument `--vault-password-file ~/.secrets/vault.secret`
+- When you run ansible-playbook you can reference this file by adding the argument ```--vault-password-file ~/.secrets/vault.secret```
 
 ## Not encrypting admin password <a name="no_password_encrypt"></a>
 Its recommended to use ansible vault to encrypt the Big-IP admin password value while its stored in-rest, however this is not required.  
@@ -96,14 +96,14 @@ Example:
 password: "supersecretpassword"
 ```
 An easy alternative is to store the password in a bash/shell variable.  
-`export BIGIP_PASSWORD="supersecretpassword"`  
+```export BIGIP_PASSWORD="supersecretpassword"```  
 
 Then configure the password var to use the bash variable:
 ```
 password: "{{ lookup('env','BIGIP_PASSWORD') }}"
 ```
 # Run the playbook <a name="Run_Ansible"></a>
-`ansible-playbook -i inventory ucs-backup.yaml --ask-vault-pass`   
+```ansible-playbook -i inventory ucs-backup.yaml --ask-vault-pass```  
 Expected output:  
 ```
 Vault password: 
