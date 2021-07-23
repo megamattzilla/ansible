@@ -103,6 +103,6 @@ bigip01.example.local   : ok=2    changed=1    unreachable=0    failed=0    skip
 ```
 
 ## Coming Soon! <a name="new_features"></a>
-- Delete UCS after x days option
+- Delete UCS after x days option #DONE!
 - SCP UCS to storage server option
 - What else? Feedback welcome!

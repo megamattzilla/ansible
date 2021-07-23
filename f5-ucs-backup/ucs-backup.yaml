@@ -23,3 +23,18 @@
         dest: "{{ ucs_dir }}/{{ inventory_hostname }}-{{ lookup('pipe', 'date +%Y%m%d-%H%M') }}.ucs"
         provider: "{{ provider }}"
       delegate_to: localhost
+    
+    - name: Find all UCS files older than {{ remove_ucs_older_than_days}} days.
+      find:
+        paths: "{{ ucs_dir }}"
+        age: 10d
+        recurse: yes
+      register: filesOlderThanDays
+      when: 'remove_old_ucs == true'
+    
+    - name: Remove older than {{ remove_ucs_older_than_days}} days
+      file:
+        path: "{{ item.path }}" 
+        state: absent
+      with_items: "{{ filesOlderThanDays.files }}"
+      when: 'remove_old_ucs == true'

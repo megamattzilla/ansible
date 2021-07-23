@@ -10,3 +10,7 @@ password: !vault |
 
 ##playbook vars##
 ucs_dir: "ucs_files"
+# Remove_old_ucs will trigger the playbook to look for local UCS files /
+# that are older than the specified number of days
+remove_old_ucs: true
+remove_ucs_older_than_days: "10"
