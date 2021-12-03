@@ -1,0 +1,34 @@
+##Provider vars##
+username: "admin"
+password: ""
+
+##playbook vars##
+ucs_dir: "ucs_files"
+# Remove_old_ucs will trigger the playbook to look for local UCS files /
+# that are older than the specified number of days
+remove_old_ucs: true
+remove_ucs_older_than_days: "10"
+
+vlans:
+  - name: "external"
+    tag: 5
+    interface: "1.1" 
+  - name: "internal"
+    tag: 20
+    interface: "1.1" 
+  - name: "palo_in"
+    tag: 91
+    interface: "1.1" 
+  - name: "palo_out"
+    tag: 92
+    interface: "1.1"
+
+self_ip:
+  - name: external_self
+    address: 10.5.5.19
+    netmask: 255.255.255.0
+    vlan: external
+  - name: internal_self
+    address: 10.5.20.8
+    netmask: 255.255.255.0
+    vlan: internal  

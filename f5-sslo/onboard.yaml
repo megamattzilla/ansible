@@ -1,0 +1,50 @@
+- name: Backup UCS File
+  hosts: f5-kc
+  connection: local
+  vars:
+    provider:
+      server: "{{ hostvars[inventory_hostname].ansible_host }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      validate_certs: false
+      server_port: 443
+  gather_facts: false
+  any_errors_fatal: true
+
+  tasks:
+    - name: Set the hostname of the BIG-IP
+      bigip_hostname:
+        hostname: "{{ inventory_hostname }}"
+        provider: "{{ provider }}"
+      delegate_to: localhost
+
+    - name: Set the DNS settings on the BIG-IP
+      bigip_device_dns:
+        name_servers:
+          - 192.168.1.142
+          - 8.8.8.8
+        search:
+          - localdomain
+          - f5kc.lab.local
+        provider: "{{ provider }}"
+      delegate_to: localhost
+
+    - name: Setup VLANs
+      with_items: "{{ vlans }}"
+      bigip_vlan:
+        name: "{{ item.name }}"
+        tagged_interface: "{{ item.interface }}"
+        tag: "{{ item.tag }}"
+        provider: "{{ provider }}"
+      delegate_to: localhost
+    
+    - name: Create Self IP
+      with_items: "{{ self_ip }}"    
+      bigip_selfip:
+        address: "{{ item.address }}"
+        name: "{{ item.name }}"
+        netmask: "{{ item.netmask }}"
+        vlan: "{{ item.vlan }}"
+        provider: "{{ provider }}"
+      delegate_to: localhost
+      
