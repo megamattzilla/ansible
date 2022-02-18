@@ -1,0 +1,20 @@
+- name: Run F5 Scripts
+  hosts: f5
+  gather_facts: false
+  any_errors_fatal: true
+
+  tasks:
+    #Transfer script to Big-IP and execute it. Store the results in register 'console'.
+    - name: Run Cert-mapping Script
+      script: "scripts/cert-mapping.sh"
+      register: console
+
+    #Print output for hepful ansible task output (optional)
+    - debug: msg="{{ console.stdout_lines }}"
+    - debug: msg="{{ console.stdout_lines }}"
+
+    #Write script results to file
+    - local_action:
+        module: copy
+        content: "{{ console | to_nice_json }}"
+        dest: "outputs/{{ inventory_hostname }}-cert-mappings-{{ lookup('pipe', 'date +%Y-%m-%d-%H.%M.%S') }}.json"
