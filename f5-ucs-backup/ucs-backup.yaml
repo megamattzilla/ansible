@@ -27,14 +27,14 @@
     - name: Find all UCS files older than {{ remove_ucs_older_than_days}} days.
       find:
         paths: "{{ ucs_dir }}"
-        age: 10d
+        age:  "{{ remove_ucs_older_than_days + 'd' }}" 
         recurse: yes
       register: filesOlderThanDays
-      when: 'remove_old_ucs == true'
+      when: remove_old_ucs == True
     
     - name: Remove older than {{ remove_ucs_older_than_days}} days
       file:
         path: "{{ item.path }}" 
         state: absent
       with_items: "{{ filesOlderThanDays.files }}"
-      when: 'remove_old_ucs == true'
+      when: remove_old_ucs == True
