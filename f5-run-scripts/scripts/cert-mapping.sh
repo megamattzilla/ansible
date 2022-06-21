@@ -15,7 +15,7 @@ test -n "${CERT}" 2>&- && {
 CIPHERS=`tmsh list /ltm profile client-ssl ${PCRT} ciphers | grep ciphers | awk '{print $2}'`
 EXDATE=`tmsh list /sys file ssl-cert ${CERT} | grep expiration-string | awk -F '"' '{print $2}'`
 EXDATEEPOCH=`tmsh list /sys file ssl-cert ${CERT} | grep expiration-date | awk '{print $2}'`
-echo "${VAL} ${PCRT} ${CERT} ${CIPHERS} ${EXDATE} ${EXDATEEPOCH}"
+echo "${VAL}, ${PCRT}, ${CERT}, ${CIPHERS}, ${EXDATE}, ${EXDATEEPOCH}"
 }
 done
 }
