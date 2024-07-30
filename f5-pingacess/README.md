@@ -1,4 +1,4 @@
-# Ansible playbook to create n-number Ping Access Profile on n-number Big-IP's 
+# Ansible playbook to create n-number Ping Access Profiles on n-number Big-IP's 
 
 ![alt text](2024-07-30_15-58-06.png)
 
