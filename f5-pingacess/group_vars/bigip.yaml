@@ -1,0 +1,15 @@
+##Provider vars##
+username: "admin"
+
+##playbook vars##
+PingAccessProfiles:
+  - name: "PROD-PingAccess" #Name of PingAccess Profile
+    pingAccessPropertiesFile: "files/agent.properties" # path to PingAccess Properties file on ansible filesystem
+    pool: "/Common/1.1.1.1"
+    serversslProfile: "/Common/serverssl"
+    useHttps: "true"
+  - name: "DEV-PingAccess" #Name of PingAccess Profile
+    pingAccessPropertiesFile: "files/agent.properties" # path to PingAccess Properties file on ansible filesystem
+    pool: "/Common/1.1.1.1"
+    serversslProfile: "/Common/serverssl"
+    useHttps: "true"

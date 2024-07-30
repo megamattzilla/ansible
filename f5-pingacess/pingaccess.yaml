@@ -1,0 +1,118 @@
+- name: Create Ping Access Profiles
+  hosts: bigip
+  connection: local
+  vars:
+    provider:
+      server: "{{ hostvars[inventory_hostname].ansible_host }}"
+      user: "{{ username }}"
+      password: "{{ password }}"
+      validate_certs: false
+      server_port: 443
+  gather_facts: false
+  any_errors_fatal: true
+
+  tasks:
+
+##Obtain Size and MD5SUM of ping access property files
+    - stat:
+        path: "{{ item.pingAccessPropertiesFile }}"
+        checksum_algorithm: "md5"
+      register: ping_filestat
+      with_items: "{{ PingAccessProfiles }}"
+      changed_when: 1 == 2 
+
+## Check if PingAccess Agent Properties File exists on Big-IP 
+    - name: Check if PingAccess Agent Properties File exists on Big-IP 
+      uri:
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/aaa/ping-access-properties-file/{{ item.stat.checksum }}"
+        user: "{{ provider.user }}"
+        password: "{{ provider.password }}"
+        validate_certs: false
+        force_basic_auth: yes
+        method: GET
+        status_code: 200,404
+      register: check_pingAccess_properties
+      with_items: "{{ ping_filestat.results }}"
+      ## This will never make a change. 
+      changed_when: 1 == 2       
+
+## Upload PingAccess Agent Properties File to Big-IP
+    - name: Upload PingAccess Properties File to Big-IP
+      uri:
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/shared/file-transfer/uploads/{{ ping_filestat.results[item.0].stat.checksum }}"
+        user: "{{ provider.user }}"
+        password: "{{ provider.password }}"
+        validate_certs: false
+        force_basic_auth: yes
+        method: POST
+        src: "{{ ping_filestat.results[item.0].stat.path }}"
+        headers:
+          Content-Type: "application/octet-stream"
+          Content-Range: "0-{{ ping_filestat.results[item.0].stat.size -1 }}/{{ ping_filestat.results[item.0].stat.size }}"
+        status_code: 200
+      ## Using indexed items allows me to deterministically pull data from the ping_filestat.results register. 
+      with_indexed_items: "{{ ping_filestat.results }}"
+      ## If previous check task had a 404 not found, run this task for that item. 
+      when: check_pingAccess_properties.results[item.0].status == 404
+
+## Create PingAccess Agent Properties File on Big-IP
+    - name: Create PingAccess Properties File on Big-IP
+      uri:
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/aaa/ping-access-properties-file"
+        user: "{{ provider.user }}"
+        password: "{{ provider.password }}"
+        validate_certs: false
+        force_basic_auth: yes
+        method: POST
+        body_format: json
+        body:
+          name: "{{ ping_filestat.results[item.0].stat.checksum }}"
+          localPath: "/var/config/rest/downloads/{{ ping_filestat.results[item.0].stat.checksum }}"
+        status_code: 200,409
+      register: create_pingAccess_properties
+      ## Using indexed items allows me to deterministically pull data from the ping_filestat.results register. 
+      with_indexed_items: "{{ ping_filestat.results }}"
+      ## If previous check task had a 404 not found, run this task for that item. 
+      when: check_pingAccess_properties.results[item.0].status == 404
+      ## Only register change when response code for this task is 200 Ok. 
+      changed_when: create_pingAccess_properties.status == 200
+
+## Check if PingAccess Profile exists on Big-IP 
+    - name: Check if PingAccess Profile exists on Big-IP 
+      uri:
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/profile/ping-access/{{ item.item.name }}"
+        user: "{{ provider.user }}"
+        password: "{{ provider.password }}"
+        validate_certs: false
+        force_basic_auth: yes
+        method: GET
+        status_code: 200,404
+      register: check_pingAccess_profile
+      with_items: "{{ ping_filestat.results }}"
+      ## This will never make a change.
+      changed_when: 1 == 2     
+
+## Create PingAccess Profile on Big-IP 
+    - name: Create PingAccess Profile on Big-IP 
+      uri:
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/profile/ping-access"
+        user: "{{ provider.user }}"
+        password: "{{ provider.password }}"
+        validate_certs: false
+        force_basic_auth: yes
+        method: POST
+        body_format: json
+        body:
+          name: "{{ ping_filestat.results[item.0].item.name }}"
+          pingAccessProperties: "/Common/{{ ping_filestat.results[item.0].stat.checksum }}"
+          pool: "{{ ping_filestat.results[item.0].item.pool }}"
+          serversslProfile: "{{ ping_filestat.results[item.0].item.serversslProfile }}"
+          useHttps: "{{ ping_filestat.results[item.0].item.useHttps }}"
+        status_code: 200,409
+      register: create_pingAccess_profile
+      ## Using indexed items allows me to deterministically pull data from the ping_filestat.results register. 
+      with_indexed_items: "{{ ping_filestat.results }}"
+      ## If previous check task had a 404 not found, run this task for that item. 
+      when: check_pingAccess_profile.results[item.0].status == 404
+      ## Only register change when response code for this task is 200 Ok.
+      changed_when: create_pingAccess_profile.status == 200

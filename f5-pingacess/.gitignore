@@ -1,0 +1,6 @@
+ucs_files*
+inventory-*
+vault.yaml
+ansible.log
+*_local
+files/*.properties
