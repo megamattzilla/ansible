@@ -19,6 +19,7 @@
         checksum_algorithm: "md5"
       register: ping_filestat
       with_items: "{{ PingAccessProfiles }}"
+      ## This will never make a change. 
       changed_when: 1 == 2 
 
 ## Check if PingAccess Agent Properties File exists on Big-IP 
