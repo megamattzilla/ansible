@@ -1,6 +1,15 @@
-# Ansible playbook to create n-number Ping Access Profiles on n-number Big-IP's 
+### Ansible playbook to create n-number Ping Access Profiles on n-number Big-IP's 
+
 
 ![alt text](2024-07-30_15-58-06.png)
+![alt text](2024-07-31_11-29-13.png)
+* Properties File name is dynamically generated with name of Ping Profile + MD5SUM of properties file contents. 
+
+### Changelog:
+- 7/31/24 
+  - Added code to detect if any PingAccess settings differ and update existing Ping Profiles if needed.
+  - Modified PingAccess Properties File name to prepend the profile name.   
+- 7/30/24 Initial Version. 
 
 The playbook uses these REST API endpoints:
 | API Endpoint | Purpose 

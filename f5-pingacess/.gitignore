@@ -2,5 +2,5 @@ ucs_files*
 inventory-*
 vault.yaml
 ansible.log
-*_local
+*_local*
 files/*.properties
