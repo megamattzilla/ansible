@@ -8,7 +8,8 @@
 ### Changelog:
 - 7/31/24 
   - Added code to detect if any PingAccess settings differ and update existing Ping Profiles if needed.
-  - Modified PingAccess Properties File name to prepend the profile name.   
+  - Modified PingAccess Properties File name to prepend the profile name.
+  - Replaced `with_items` with `loop` for better output and more concise referencing.    
 - 7/30/24 Initial Version. 
 
 The playbook uses these REST API endpoints:
