@@ -12,18 +12,24 @@
   any_errors_fatal: true
 
   tasks:
+##Summary
+## All tasks loop over {{ PingAccessProfiles }} and then call other registers to get output from various tasks.
+## The Imperative API calls are written to be idempotent.  
 
 ## Obtain Size and MD5SUM of ping access property files
     - stat:
         path: "{{ item.pingAccessPropertiesFile }}"
         checksum_algorithm: "md5"
       register: ping_filestat
-      with_items: "{{ PingAccessProfiles }}"
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
 
 ## Check if PingAccess Agent Properties File exists on Big-IP 
     - name: Check if PingAccess Agent Properties File exists on Big-IP 
       uri:
-        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/aaa/ping-access-properties-file/{{ item.item.name }}_{{ item.stat.checksum }}"
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/aaa/ping-access-properties-file/{{ item.name }}_{{ ping_filestat.results[index].stat.checksum }}"
         user: "{{ provider.user }}"
         password: "{{ provider.password }}"
         validate_certs: false
@@ -31,26 +37,31 @@
         method: GET
         status_code: 200,404
       register: check_pingAccess_properties
-      with_items: "{{ ping_filestat.results }}"
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
 
 ## Upload PingAccess Agent Properties File to Big-IP
     - name: Upload PingAccess Properties File to Big-IP
       uri:
-        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/shared/file-transfer/uploads/{{ ping_filestat.results[item.0].item.name }}_{{ ping_filestat.results[item.0].stat.checksum }}"
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/shared/file-transfer/uploads/{{ item.name }}_{{ ping_filestat.results[index].stat.checksum }}"
         user: "{{ provider.user }}"
         password: "{{ provider.password }}"
         validate_certs: false
         force_basic_auth: yes
         method: POST
-        src: "{{ ping_filestat.results[item.0].stat.path }}"
+        src: "{{ ping_filestat.results[index].stat.path }}"
         headers:
           Content-Type: "application/octet-stream"
-          Content-Range: "0-{{ ping_filestat.results[item.0].stat.size -1 }}/{{ ping_filestat.results[item.0].stat.size }}"
+          Content-Range: "0-{{ ping_filestat.results[index].stat.size -1 }}/{{ ping_filestat.results[index].stat.size }}"
         status_code: 200
-      ## Using indexed items allows me to deterministically pull data from the ping_filestat.results register. 
-      with_indexed_items: "{{ ping_filestat.results }}"
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
       ## If previous check task had a 404 not found, run this task for that item. 
-      when: check_pingAccess_properties.results[item.0].status == 404
+      when: check_pingAccess_properties.results[index].status == 404
 
 ## Create PingAccess Agent Properties File on Big-IP
     - name: Create PingAccess Properties File on Big-IP
@@ -63,21 +74,23 @@
         method: POST
         body_format: json
         body:
-          name: "{{ ping_filestat.results[item.0].item.name }}_{{ ping_filestat.results[item.0].stat.checksum }}"
-          localPath: "/var/config/rest/downloads/{{ ping_filestat.results[item.0].item.name }}_{{ ping_filestat.results[item.0].stat.checksum }}"
+          name: "{{ item.name }}_{{ ping_filestat.results[index].stat.checksum }}"
+          localPath: "/var/config/rest/downloads/{{ item.name }}_{{ ping_filestat.results[index].stat.checksum }}"
         status_code: 200,409
       register: create_pingAccess_properties
-      ## Using indexed items allows me to deterministically pull data from the ping_filestat.results register. 
-      with_indexed_items: "{{ ping_filestat.results }}"
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
       ## If previous check task had a 404 not found, run this task for that item. 
-      when: check_pingAccess_properties.results[item.0].status == 404
+      when: check_pingAccess_properties.results[index].status == 404
       ## Only register change when response code for this task is 200 Ok. 
       changed_when: create_pingAccess_properties.status == 200
 
 ## Check if PingAccess Profile exists on Big-IP 
     - name: Check if PingAccess Profile exists on Big-IP 
       uri:
-        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/profile/ping-access/{{ ping_filestat.results[item.0].item.name }}"
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/profile/ping-access/{{ item.name }}"
         user: "{{ provider.user }}"
         password: "{{ provider.password }}"
         validate_certs: false
@@ -85,18 +98,24 @@
         method: GET
         status_code: 200,404
       register: check_pingAccess_profile
-      with_indexed_items: "{{ ping_filestat.results }}"       
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
 
     - name: Check if current PingAccess Profile matches Desired PingAccess Profile settings
       ansible.utils.fact_diff:
       ## If you know a better way to do this part please let me know. 
       ## For each PingAccess profile to be evaluated, render a line of CSV with current and desired settings, then compare them. 
-        before: "{{ check_pingAccess_profile.results[item.0].json.pool,check_pingAccess_profile.results[item.0].json.pingAccessProperties,check_pingAccess_profile.results[item.0].json.serversslProfile,check_pingAccess_profile.results[item.0].json.useHttps }}"
-        after: "{{ ping_filestat.results[item.0].item.pool,'/Common/' + ping_filestat.results[item.0].item.name + '_' + ping_filestat.results[item.0].stat.checksum,ping_filestat.results[item.0].item.serversslProfile,ping_filestat.results[item.0].item.useHttps }}"
+        before: "{{ check_pingAccess_profile.results[index].json.pool,check_pingAccess_profile.results[index].json.pingAccessProperties,check_pingAccess_profile.results[index].json.serversslProfile,check_pingAccess_profile.results[index].json.useHttps }}"
+        after: "{{ ping_filestat.results[index].item.pool,'/Common/' + item.name + '_' + ping_filestat.results[index].stat.checksum,ping_filestat.results[index].item.serversslProfile,ping_filestat.results[index].item.useHttps }}"
       register: diff_pingAccess_profiles
-      with_indexed_items: "{{ ping_filestat.results }}"
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
       ## If PingAccess profile exists, compare current settings with desired. 
-      when: check_pingAccess_profile.results[item.0].status == 200
+      when: check_pingAccess_profile.results[index].status == 200
 
 ## Create PingAccess Profile on Big-IP 
     - name: Create PingAccess Profile on Big-IP 
@@ -109,24 +128,27 @@
         method: POST
         body_format: json
         body:
-          name: "{{ ping_filestat.results[item.0].item.name }}"
-          pingAccessProperties: "/Common/{{ ping_filestat.results[item.0].item.name }}_{{ ping_filestat.results[item.0].stat.checksum }}"
-          pool: "{{ ping_filestat.results[item.0].item.pool }}"
-          serversslProfile: "{{ ping_filestat.results[item.0].item.serversslProfile }}"
-          useHttps: "{{ ping_filestat.results[item.0].item.useHttps }}"
-        status_code: 200,409
+          name: "{{ item.name }}"
+          pingAccessProperties: "/Common/{{ item.name }}_{{ ping_filestat.results[index].stat.checksum }}"
+          pool: "{{ ping_filestat.results[index].item.pool }}"
+          serversslProfile: "{{ ping_filestat.results[index].item.serversslProfile }}"
+          useHttps: "{{ ping_filestat.results[index].item.useHttps }}"
+        status_code: 200
       register: create_pingAccess_profile
       ## Using indexed items allows me to deterministically pull data from the ping_filestat.results register. 
-      with_indexed_items: "{{ ping_filestat.results }}" 
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
       when: 
       ## If PingAccess profile does not exist, run this task for that item.
-        - check_pingAccess_profile.results[item.0].status == 404
+        - check_pingAccess_profile.results[index].status == 404
       changed_when: create_pingAccess_profile.status == 200
 
 ## Modify Existing PingAccess Profile on Big-IP 
     - name: Modify Existing PingAccess Profile on Big-IP 
       uri:
-        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/profile/ping-access/{{ ping_filestat.results[item.0].item.name }}"
+        url: "https://{{ hostvars[inventory_hostname].ansible_host }}/mgmt/tm/apm/profile/ping-access/{{ item.name }}"
         user: "{{ provider.user }}"
         password: "{{ provider.password }}"
         validate_certs: false
@@ -134,16 +156,18 @@
         method: PATCH
         body_format: json
         body:
-          name: "{{ ping_filestat.results[item.0].item.name }}"
-          pingAccessProperties: "/Common/{{ ping_filestat.results[item.0].item.name }}_{{ ping_filestat.results[item.0].stat.checksum }}"
-          pool: "{{ ping_filestat.results[item.0].item.pool }}"
-          serversslProfile: "{{ ping_filestat.results[item.0].item.serversslProfile }}"
-          useHttps: "{{ ping_filestat.results[item.0].item.useHttps }}"
+          name: "{{ item.name }}"
+          pingAccessProperties: "/Common/{{ item.name }}_{{ ping_filestat.results[index].stat.checksum }}"
+          pool: "{{ ping_filestat.results[index].item.pool }}"
+          serversslProfile: "{{ ping_filestat.results[index].item.serversslProfile }}"
+          useHttps: "{{ ping_filestat.results[index].item.useHttps }}"
         status_code: 200
       register: modify_pingAccess_profile
-      ## Using indexed items allows me to deterministically pull data from the ping_filestat.results register. 
-      with_indexed_items: "{{ ping_filestat.results }}" 
+      loop: "{{ PingAccessProfiles }}"
+      loop_control:
+        index_var: index
+        label: "{{ item.name }}"
       when: 
       ## If PingProfile exists AND a settings change is detected, run this task for that item. 
-        - check_pingAccess_profile.results[item.0].status == 200 and diff_pingAccess_profiles.results[item.0].changed == true
+        - check_pingAccess_profile.results[index].status == 200 and diff_pingAccess_profiles.results[index].changed == true
       changed_when: modify_pingAccess_profile.status == 200
