@@ -1,6 +1,6 @@
 ##Provider vars##
 username: "admin"
-
+password: "{{ lookup('env','BIGIP_PASSWORD') }}"
 ##playbook vars##
 PingAccessProfiles:
   - name: "PROD-PingAccess" #Name of PingAccess Profile

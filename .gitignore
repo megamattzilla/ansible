@@ -1,0 +1,5 @@
+## Exclude local development files
+.DS_Store
+
+## Exclude local testing files
+*/*scratch*
