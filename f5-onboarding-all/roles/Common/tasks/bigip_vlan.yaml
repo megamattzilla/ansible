@@ -1,0 +1,9 @@
+- name: Create vlans
+  f5networks.f5_modules.bigip_vlan:
+    tagged_interface: "{{ item.interface if platform_type == 'iSeries' else omit }}"
+    untagged_interface: "{{ item.interface if platform_type == 'VE' else omit }}"
+    name: "{{ item.name }}"
+    tag: "{{ item.tag }}"
+    provider: "{{ provider }}"
+  delegate_to: localhost
+  loop: "{{ vlans }}"

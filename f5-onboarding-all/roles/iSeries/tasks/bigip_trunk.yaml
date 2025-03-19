@@ -1,0 +1,12 @@
+- name: Create trunk
+  f5networks.f5_modules.bigip_trunk:
+    name: "{{ item.name }}"
+    interfaces: "{{ item.members }}"
+    link_selection_policy: "{{ item.link_selection_policy }}"
+    frame_distribution_hash: "{{ item.frame_distribution_hash }}"
+    lacp_enabled: "{{ item.lacp_enabled }}"
+    lacp_mode: "{{ item.lacp_mode }}"
+    lacp_timeout: "{{ item.lacp_timeout }}"
+    provider: "{{ provider }}"
+  delegate_to: localhost
+  loop: "{{ trunks }}"

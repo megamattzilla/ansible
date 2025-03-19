@@ -1,0 +1,9 @@
+- name: Create F5OS trunk (LAG)
+  f5networks.f5os.f5os_lag:
+    name: "{{ item.name }}"
+    lag_type: "lacp"
+    mode: "{{ item.lacp_mode }}"
+    interval: "{{ item.lacp_timeout }}"
+    config_members: "{{ item.members }}"
+  loop: "{{ trunks }}"
+  connection: httpapi

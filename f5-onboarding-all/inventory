@@ -1,0 +1,5 @@
+[f5-demo-iSeries]
+bigip01.example.local ansible_host=192.168.1.1
+
+[f5-demo-rSeries]
+bigip01.example.local ansible_host=192.168.1.2

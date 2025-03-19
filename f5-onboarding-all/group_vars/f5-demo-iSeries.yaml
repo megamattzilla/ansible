@@ -1,0 +1,31 @@
+
+f5hosts: "default" ## Set F5 hosts to default value when not specified at runtime. Fixes validation errors. 
+username: "admin" ## Set default F5 username
+password: "{{ lookup('env','BIGIP_PASSWORD') }}" ## Set f5 password from environment variable 
+
+platform_type: iSeries ## Specifies this host group type. Possible values: iSeries, VE, rSeries.  
+
+## iSeries physical interface definitions 
+interfaces:
+  - name: 8.0
+    bundle: disabled
+
+## iSeries trunk
+trunks:
+  - name: trunk-1
+    members: 
+      - 8.1
+      - 8.2
+      - 8.3
+      - 8.4
+    link_selection_policy: maximum-bandwidth
+    frame_distribution_hash: destination-mac
+    lacp_enabled: true
+    lacp_mode: passive
+    lacp_timeout: short
+
+## Vlans
+vlans:
+  - name: external-test
+    interface: trunk-1
+    tag: 2345
