@@ -3,3 +3,7 @@
 
 ## Exclude local testing files
 */*scratch*
+
+## Exclude images
+*/*iso*
+*/*qcow2*

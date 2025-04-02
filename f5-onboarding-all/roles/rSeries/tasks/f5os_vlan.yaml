@@ -1,6 +1,0 @@
-- name: Create F5OS vlans
-  f5networks.f5os.f5os_vlan:
-    name: "{{ item.name }}"
-    vlan_id: "{{ item.tag }}"
-  loop: "{{ vlans }}"
-  connection: httpapi

@@ -1,0 +1,52 @@
+## Placeholder to add https://clouddocs.f5.com/api/rseries-api/F5OS-A-1.0.0-cli.html#r5r10-config-mode-commands-portgroups.
+## Until its added, interface bundle mode must be set before ansible runs.
+
+- name: Create F5OS vlans
+  f5networks.f5os.f5os_vlan:
+    name: "{{ item.name }}"
+    vlan_id: "{{ item.tag }}"
+  loop: "{{ vlans }}"
+
+- name: Create F5OS trunk (LAG) 
+  f5networks.f5os.f5os_lag:
+    name: "{{ item.name }}"
+    lag_type: "lacp"
+    mode: "{{ item.lacp_mode }}"
+    native_vlan: "{{ item.native_vlan }}"
+    trunk_vlans: "{{ item.trunked_vlans }}"
+    interval: "{{ item.lacp_timeout }}"
+    config_members: "{{ item.members }}"
+  loop: "{{ trunks }}"
+  
+
+- name: Assign vlans to interface
+  f5networks.f5os.f5os_interface:
+    name: "{{ item.name }}"
+    native_vlan: "{{ item.native_vlan }}"
+    trunk_vlans: "{{ item.trunked_vlans }}"
+  loop: "{{ interfaces }}"
+
+- name: Check for Tenant Image
+  ansible.builtin.shell: sshpass -p "{{ root_password }}" ssh  "{{ root_username }}"@"{{ ansible_host }}" 'ls /var/F5/system/IMAGES/{{ item }}'
+  vars:
+    ansible_connection: local
+  delegate_to: localhost
+  register: check_tenant_images
+  ignore_errors: true
+  loop: "{{ tenant_images }}"
+  failed_when:
+    - item not in check_tenant_images.stderr
+    - item not in check_tenant_images.stdout
+  changed_when: 1 == 2
+  loop_control:
+    index_var: index
+
+- name: Upload Tenant Image
+  ansible.builtin.shell: sshpass -p {{ root_password }} scp {{ role_path }}/files/{{ item }} {{ root_username }}@{{ ansible_host }}:/var/F5/system/IMAGES/
+  vars:
+    ansible_connection: local
+  delegate_to: localhost
+  loop: "{{ tenant_images }}"
+  loop_control:
+    index_var: index
+  when: item not in check_tenant_images.results[index].stdout

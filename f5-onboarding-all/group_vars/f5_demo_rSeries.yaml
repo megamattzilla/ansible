@@ -1,0 +1,37 @@
+
+f5hosts: "default" ## Set F5 hosts to default value when not specified at runtime. Fixes validation errors. 
+username: "admin" ## Set F5 username for API login
+root_username: "root" ## Set root F5 username
+password: "{{ lookup('env','BIGIP_PASSWORD') }}" ## Set f5 password from environment variable
+root_password:  "{{ lookup('env','BIGIP_ROOT_PASSWORD') }}" ## Set f5 root password from environment variable
+
+## rSeries physical interface definitions 
+interfaces:
+  - name: 7.0
+    bundle: disabled
+    native_vlan: 2346
+    trunked_vlans:
+      - 2345
+
+## rSeries trunk
+trunks:
+  - name: trunk-1
+    members: 
+      - 8.0
+      - 9.0
+    lacp_mode: passive
+    lacp_timeout: fast
+    native_vlan: 2346
+    trunked_vlans:
+      - 2345
+
+## Vlans
+vlans:
+  - name: external-test
+    tag: 2345
+  - name: internal-test
+    tag: 2346
+
+#Name of tenant files to upload to rSeries from roles/rSeries/files/ 
+tenant_images:
+  - BIGIP-17.5.0-0.0.15.ALL-F5OS.qcow2.zip.bundle

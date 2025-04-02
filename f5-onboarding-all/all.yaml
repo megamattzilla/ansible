@@ -11,40 +11,14 @@
       no_f5_teem: true
   gather_facts: false
   any_errors_fatal: true
+
   tasks:
-
-  - name: Configure iSeries Interface Bundle
-    include_role:
+  - name: Launch iSeries Role
+    ansible.builtin.include_role:
       name: iSeries
-      tasks_from: bigip_interface
     when: platform_type == "iSeries" 
   
-  - name: Configure iSeries Trunk
-    include_role:
-      name: iSeries
-      tasks_from: bigip_trunk
-    when: platform_type == "iSeries" 
-
-  - name: Configure Common vlans 
-    include_role:
-      name: Common
-      tasks_from: bigip_vlan
-    when: platform_type == "iSeries" or platform_type == "VE"
-
-  - name: Configure rSeries trunks (LAG)
-    include_role:
+  - name: Launch rSeries Role
+    ansible.builtin.include_role:
       name: rSeries
-      tasks_from: f5os_lag
-    when: platform_type == "rSeries"
-
-  - name: Configure rSeries vlans 
-    include_role:
-      name: rSeries
-      tasks_from: f5os_vlan
-    when: platform_type == "rSeries"
-  
-  - name: Assign rSeries vlans to interfaces
-    include_role:
-      name: rSeries
-      tasks_from: f5os_vlan
-    when: platform_type == "rSeries"
+    when: platform_type == "rSeries" 

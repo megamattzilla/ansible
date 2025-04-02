@@ -1,0 +1,9 @@
+- name: Create vlans and assign to interfaces
+  f5networks.f5_modules.bigip_vlan:
+    tagged_interface: "{{ item.trunked_interface | default(omit) }}"
+    untagged_interface: "{{ item.native_interface | default(omit) }}"
+    name: "{{ item.name }}"
+    tag: "{{ item.tag }}"
+    provider: "{{ provider }}"
+  delegate_to: localhost
+  loop: "{{ vlans }}"

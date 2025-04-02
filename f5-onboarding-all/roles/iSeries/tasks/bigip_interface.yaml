@@ -1,7 +1,0 @@
-- name: Update Interface Settings
-  f5networks.f5_modules.bigip_interface:
-    name: "{{ item.name }}"
-    bundle: "{{ item.bundle }}"
-    provider: "{{ provider }}"
-  delegate_to: localhost
-  loop: "{{ interfaces }}"
