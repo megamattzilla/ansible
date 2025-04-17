@@ -1,24 +1,26 @@
 ---
 
-- hosts: "{{ f5hosts }}"
+- hosts: "{{ f5hosts }}"  # Run this play on hosts defined by the 'f5hosts' group or variable
   vars:
-    provider:
-      server: "{{ hostvars[inventory_hostname].ansible_host }}"
-      user: "{{ username }}"
-      password: "{{ password }}"
-      validate_certs: false
-      server_port: 443
-      no_f5_teem: true
-  gather_facts: false
-  any_errors_fatal: true
+    provider:                                  
+      server: "{{ hostvars[inventory_hostname].ansible_host }}"  # IP or hostname of the current target F5 device
+      user: "{{ username }}"                                     # API username (from extra vars or inventory)
+      password: "{{ password }}"                                 # API password (should come from a vault or secret manager)
+      validate_certs: false                                      # Disable SSL cert validation 
+      server_port: 443                                           # HTTPS port for API access
+      no_f5_teem: true                                           # Disable F5 phone-home telemetry (optional but good for privacy)
+
+  gather_facts: false              # Skip standard system fact gathering (not needed for F5 API-based tasks)
+  any_errors_fatal: true           # If any host fails, stop the play for all (prevents partial onboarding)
 
   tasks:
+
   - name: Launch iSeries Role
     ansible.builtin.include_role:
-      name: iSeries
-    when: platform_type == "iSeries" 
-  
+      name: iSeries            # Includes tasks from roles/iSeries/
+    when: platform_type == "iSeries"  # Run only if the target device is an iSeries
+
   - name: Launch rSeries Role
     ansible.builtin.include_role:
-      name: rSeries
-    when: platform_type == "rSeries" 
+      name: rSeries            # Includes tasks from roles/rSeries/
+    when: platform_type == "rSeries"  # Run only if the target device is an rSeries

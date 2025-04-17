@@ -1,9 +1,9 @@
 - name: Create vlans and assign to interfaces
   f5networks.f5_modules.bigip_vlan:
-    tagged_interface: "{{ item.trunked_interface | default(omit) }}"
-    untagged_interface: "{{ item.native_interface | default(omit) }}"
-    name: "{{ item.name }}"
-    tag: "{{ item.tag }}"
-    provider: "{{ provider }}"
-  delegate_to: localhost
-  loop: "{{ vlans }}"
+    tagged_interface: "{{ item.trunked_interface | default(omit) }}"   # Apply VLAN as tagged to this interface (omit if not defined)
+    untagged_interface: "{{ item.native_interface | default(omit) }}"  # Apply VLAN as untagged (native) to this interface (omit if not defined)
+    name: "{{ item.name }}"                                            # VLAN name (unique identifier in BIG-IP)
+    tag: "{{ item.tag }}"                                              # VLAN ID (802.1Q tag)
+    provider: "{{ provider }}"                                         # Connection info for the BIG-IP API
+  delegate_to: localhost                                               # Run this task from the control node using API, not SSH to device
+  loop: "{{ vlans }}"                                                  # Iterate over each VLAN entry in the 'vlans' list

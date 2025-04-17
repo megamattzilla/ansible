@@ -1,9 +1,10 @@
 ## Set HTTP API vars
-ansible_connection: httpapi
-ansible_user: "{{ username }}"
-ansible_httpapi_password: "{{ password }}"
-ansible_network_os: "f5networks.f5os.f5os"
-ansible_httpapi_use_ssl: true
-ansible_httpapi_use_proxy: false
-ansible_httpapi_validate_certs: "{{ provider.validate_certs }}"
-ansible_httpapi_port: "{{ provider.server_port }}"
+
+ansible_connection: httpapi                        # Use Ansible's 'httpapi' connection plugin for API-based communication
+ansible_user: "{{ username }}"                     # API login username (provided externally or via inventory/extra vars)
+ansible_httpapi_password: "{{ password }}"         # API login password (same source as username)
+ansible_network_os: "f5networks.f5os.f5os"         # Specifies the F5OS plugin to use for network device operations
+ansible_httpapi_use_ssl: true                      # Use HTTPS for all API communication (should always be true for F5)
+ansible_httpapi_use_proxy: false                   # Disable any system HTTP proxy — prevents connection issues in isolated networks
+ansible_httpapi_validate_certs: "{{ provider.validate_certs }}" # Whether to validate SSL certificates
+ansible_httpapi_port: "{{ provider.server_port }}" # Port used for the API (typically 443 for SSL)

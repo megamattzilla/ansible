@@ -1,52 +1,80 @@
 ## Placeholder to add https://clouddocs.f5.com/api/rseries-api/F5OS-A-1.0.0-cli.html#r5r10-config-mode-commands-portgroups.
-## Until its added, interface bundle mode must be set before ansible runs.
+## Until it's added, interface bundle mode must be set manually before Ansible runs.
 
 - name: Create F5OS vlans
   f5networks.f5os.f5os_vlan:
-    name: "{{ item.name }}"
-    vlan_id: "{{ item.tag }}"
-  loop: "{{ vlans }}"
+    name: "{{ item.name }}"        # VLAN name (unique identifier)
+    vlan_id: "{{ item.tag }}"      # VLAN ID (802.1Q tag)
+  loop: "{{ vlans }}"              # Loop through each VLAN definition in 'vlans'
 
 - name: Create F5OS trunk (LAG) 
   f5networks.f5os.f5os_lag:
-    name: "{{ item.name }}"
-    lag_type: "lacp"
-    mode: "{{ item.lacp_mode }}"
-    native_vlan: "{{ item.native_vlan }}"
-    trunk_vlans: "{{ item.trunked_vlans }}"
-    interval: "{{ item.lacp_timeout }}"
-    config_members: "{{ item.members }}"
-  loop: "{{ trunks }}"
-  
+    name: "{{ item.name }}"              # Trunk/LAG name
+    lag_type: "lacp"                     # Set trunking mode to LACP (Link Aggregation Control Protocol)
+    mode: "{{ item.lacp_mode }}"         # LACP mode: 'active' or 'passive'
+    native_vlan: "{{ item.native_vlan }}" # VLAN assigned as native (untagged)
+    trunk_vlans: "{{ item.trunked_vlans }}" # List of VLANs allowed on the trunk (tagged)
+    interval: "{{ item.lacp_timeout }}"  # LACP timeout: typically 'fast' or 'slow'
+    config_members: "{{ item.members }}" # List of physical interfaces to include in the trunk
+  loop: "{{ trunks }}"                   # Loop through all defined trunks
 
 - name: Assign vlans to interface
   f5networks.f5os.f5os_interface:
-    name: "{{ item.name }}"
-    native_vlan: "{{ item.native_vlan }}"
-    trunk_vlans: "{{ item.trunked_vlans }}"
-  loop: "{{ interfaces }}"
+    name: "{{ item.name }}"              # Interface name (e.g., ethernet1/1)
+    native_vlan: "{{ item.native_vlan }}" # VLAN applied as native (untagged)
+    trunk_vlans: "{{ item.trunked_vlans }}" # Tagged VLANs assigned to this interface
+  loop: "{{ interfaces }}"               # Loop through each interface definition
 
 - name: Check for Tenant Image
   ansible.builtin.shell: sshpass -p "{{ root_password }}" ssh  "{{ root_username }}"@"{{ ansible_host }}" 'ls /var/F5/system/IMAGES/{{ item }}'
   vars:
-    ansible_connection: local
-  delegate_to: localhost
-  register: check_tenant_images
-  ignore_errors: true
-  loop: "{{ tenant_images }}"
+    ansible_connection: local            # Run this command from the control node, not the remote device
+  delegate_to: localhost                 # Force task execution on localhost
+  register: check_tenant_images          # Store results of the image check for later use
+  ignore_errors: true                    # Don’t fail if the file is not found (expected sometimes)
+  loop: "{{ tenant_images }}"            # Check each image in the list of required tenant images
   failed_when:
-    - item not in check_tenant_images.stderr
-    - item not in check_tenant_images.stdout
-  changed_when: 1 == 2
+    - item not in check_tenant_images.stderr  # Fail if image is not found in stderr
+    - item not in check_tenant_images.stdout  # Fail if image is not found in stdout
+  changed_when: 1 == 2                   # Mark as "not changed" (this task only checks, doesn't alter state)
   loop_control:
-    index_var: index
+    index_var: index                     # Track loop index for cross-reference with results
 
 - name: Upload Tenant Image
   ansible.builtin.shell: sshpass -p {{ root_password }} scp {{ role_path }}/files/{{ item }} {{ root_username }}@{{ ansible_host }}:/var/F5/system/IMAGES/
   vars:
-    ansible_connection: local
-  delegate_to: localhost
-  loop: "{{ tenant_images }}"
+    ansible_connection: local            # Use the control node to send the file via SCP
+  delegate_to: localhost                 # Force task execution on localhost
+  loop: "{{ tenant_images }}"            # Loop over all tenant images to upload
   loop_control:
-    index_var: index
-  when: item not in check_tenant_images.results[index].stdout
+    index_var: index                     # Track index for lookup in previous result
+  when: item not in check_tenant_images.results[index].stdout  # Only upload if image wasn’t already found
+
+- name: Create Big-IP Tenants
+  f5networks.f5os.f5os_tenant:
+    name: "{{ item.name }}"              # Name of the tenant
+    image_name: "{{ item.image_name }}"       # Image to use for the tenant
+    mgmt_ip: "{{ item.management_ip }}"  # Management IP address for the tenant
+    nodes:
+      - 1
+    mgmt_gateway: "{{ item.management_gateway }}" # Management gateway for the tenant
+    mgmt_prefix: "{{ item.management_prefix }}" # Management subnet prefix length
+    vlans: "{{ item.vlans }}"             # VLANs assigned to the tenant
+    cpu_cores: "{{ item.cpu_cores }}"          # Number of CPUs allocated to the tenant
+    memory: "{{ item.memory }}"          # Memory allocated to the tenant in MB
+    virtual_disk_size: "{{ item.virtual_disk_size }}" # Disk space allocated to the tenant in GB
+    running_state: "{{ item.running_state }}"    # Desired state of the tenant
+  loop: "{{ tenants }}"                  # Loop through each tenant in the tenants dictionary
+
+
+- name: Wait for Tenant to be API reachable
+  f5networks.f5os.f5os_tenant_wait:
+    name: "{{ item.name }}" # Specifies the name of the tenant to check.
+    state: "api-ready" # Ensures the tenant is in the "api-ready" state.
+    timeout: 10 # Sets the timeout (in seconds) for each API readiness check.
+  register: wait_result # Registers the result of the wait operation in the `wait_result` variable.
+  until: wait_result is not failed # Retries the check until the tenant is API reachable.
+  retries: 60 # Retries the check up to 60 times.
+  when:
+    - item.running_state == "deployed" # Only runs if the tenant's `running_state` is "deployed".
+  loop: "{{ tenants }}" # Iterates over the `tenants` dictionary to perform the check for each tenant.

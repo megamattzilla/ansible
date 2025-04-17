@@ -1,37 +1,48 @@
-
-f5hosts: "default" ## Set F5 hosts to default value when not specified at runtime. Fixes validation errors. 
-username: "admin" ## Set F5 username for API login
-root_username: "root" ## Set root F5 username
-password: "{{ lookup('env','BIGIP_PASSWORD') }}" ## Set f5 password from environment variable
-root_password:  "{{ lookup('env','BIGIP_ROOT_PASSWORD') }}" ## Set f5 root password from environment variable
+f5hosts: "default"                      # Set F5 target group to "default" if not defined at runtime (prevents validation errors)
+username: "admin"                      # Username used for F5 API access (default for most F5 devices)
+root_username: "root"                  # Root-level username (used for shell/CLI access, not API)
+password: "{{ lookup('env','BIGIP_PASSWORD') }}"        # API password pulled from environment variable (more secure than hardcoding)
+root_password: "{{ lookup('env','BIGIP_ROOT_PASSWORD') }}" # Root password pulled from environment variable (used for SSH/SCP tasks)
 
 ## rSeries physical interface definitions 
 interfaces:
-  - name: 7.0
-    bundle: disabled
-    native_vlan: 2346
-    trunked_vlans:
+  - name: 7.0                          # Interface name (format: slot.port — here, slot 7, port 0)
+    bundle: disabled                  # Interface bundle mode (must be set manually before Ansible runs)
+    native_vlan: 2346                 # VLAN assigned as native (untagged traffic)
+    trunked_vlans:                    # VLANs allowed as tagged on this interface
       - 2345
 
 ## rSeries trunk
 trunks:
-  - name: trunk-1
+  - name: trunk-1                     # Logical trunk name (used for LACP/LAG configuration)
     members: 
-      - 8.0
+      - 8.0                           # List of interfaces participating in the trunk
       - 9.0
-    lacp_mode: passive
-    lacp_timeout: fast
-    native_vlan: 2346
-    trunked_vlans:
+    lacp_mode: passive               # LACP mode: 'passive' (waits for LACP initiation)
+    lacp_timeout: fast              # LACP timeout: 'fast' = short timeout (1 second)
+    native_vlan: 2346               # VLAN assigned as native (untagged on this trunk)
+    trunked_vlans:                  # Tagged VLANs allowed on this trunk
       - 2345
 
-## Vlans
+## VLANs
 vlans:
-  - name: external-test
-    tag: 2345
+  - name: external-test              # Logical name for VLAN (used as the identifier in F5 configuration)
+    tag: 2345                        # 802.1Q VLAN ID
   - name: internal-test
     tag: 2346
 
-#Name of tenant files to upload to rSeries from roles/rSeries/files/ 
+## Name of tenant files to upload to rSeries from roles/rSeries/files/
 tenant_images:
-  - BIGIP-17.5.0-0.0.15.ALL-F5OS.qcow2.zip.bundle
+  - BIGIP-17.5.0-0.0.15.ALL-F5OS.qcow2.zip.bundle  # F5 BIG-IP tenant image filename (must match exactly and be present in role's files/)
+
+tenants:
+  - name: exampletenant
+    image_name: BIGIP-17.5.0-0.0.15.ALL-F5OS.qcow2.zip.bundle
+    management_ip: 192.168.1.43
+    management_prefix: 24
+    management_gateway: 192.168.1.9
+    vlans: [2345, 2346]
+    cpu_cores: 4
+    memory: 14848
+    virtual_disk_size: 84
+    running_state: deployed

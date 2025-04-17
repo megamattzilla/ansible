@@ -1,23 +1,22 @@
 - name: Update Interface Settings
   f5networks.f5_modules.bigip_interface:
-    name: "{{ item.name }}"
-    bundle: "{{ item.bundle }}"
-    provider: "{{ provider }}"
-  delegate_to: localhost
-  loop: "{{ interfaces }}"
+    name: "{{ item.name }}"                 # Name of the physical or logical interface (e.g., 1.1, 2.0)
+    bundle: "{{ item.bundle }}"             # Optional: configure interface bundling (e.g., for breakout ports)
+    provider: "{{ provider }}"              # F5 API credentials and connection info
+  delegate_to: localhost                    # Execute on control node via API, not directly on the device
+  loop: "{{ interfaces }}"                  # Loop through the list of interfaces defined in 'interfaces'
 
 - name: Create trunk
   f5networks.f5_modules.bigip_trunk:
-    name: "{{ item.name }}"
-    interfaces: "{{ item.members }}"
-    lacp_enabled: "{{ item.lacp_enabled }}"
-    lacp_mode: "{{ item.lacp_mode }}"
-    lacp_timeout: "{{ item.lacp_timeout }}"
-    provider: "{{ provider }}"
-  delegate_to: localhost
-  loop: "{{ trunks }}"
+    name: "{{ item.name }}"                 # Trunk name (used to group multiple interfaces together)
+    interfaces: "{{ item.members }}"        # List of physical interfaces to include in the trunk
+    lacp_enabled: "{{ item.lacp_enabled }}" # Enable Link Aggregation Control Protocol (LACP) if true
+    lacp_mode: "{{ item.lacp_mode }}"       # LACP mode: 'active' or 'passive' (passive waits for LACP initiation)
+    lacp_timeout: "{{ item.lacp_timeout }}" # LACP timeout setting: 'short' (fast) or 'long' (slow)
+    provider: "{{ provider }}"              # F5 API credentials and connection info
+  delegate_to: localhost                    # Execute from control node using F5 REST API
+  loop: "{{ trunks }}"                      # Loop through the list of trunks defined in 'trunks'
 
 - name: Launch Common Role
   ansible.builtin.include_role:
-    name: Common
-
+    name: Common                            # Includes tasks from roles/Common (typically shared config steps)

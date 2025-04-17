@@ -1,32 +1,30 @@
-
-f5hosts: "default" ## Set F5 hosts to default value when not specified at runtime. Fixes validation errors. 
-username: "admin" ## Set default F5 username
-password: "{{ lookup('env','BIGIP_PASSWORD') }}" ## Set f5 password from environment variable 
+f5hosts: "default"                           # Set F5 target group to "default" when not provided at runtime (avoids validation errors)
+username: "admin"                            # Default F5 API username (used for HTTP API access)
+password: "{{ lookup('env','BIGIP_PASSWORD') }}"  # Password retrieved securely from environment variable
 
 ## iSeries physical interface definitions 
 interfaces:
-  - name: 8.0
-    bundle: disabled
-
+  - name: 8.0                                 # Physical interface name (slot 8, port 0)
+    bundle: disabled                         # Bundling disabled — interface operates independently (required before trunk config)
 
 ## iSeries trunk
 trunks:
-  - name: trunk-1
+  - name: trunk-1                             # Trunk name (LAG name for grouping interfaces)
     members: 
-      - 8.1
+      - 8.1                                   # Physical interfaces to be included in the trunk
       - 8.2
       - 8.3
       - 8.4
-    lacp_enabled: true
-    lacp_mode: passive
-    lacp_timeout: short
+    lacp_enabled: true                        # Enable LACP (Link Aggregation Control Protocol)
+    lacp_mode: passive                        # LACP mode: 'passive' waits for initiation by peer device
+    lacp_timeout: short                       # Short timeout (typically 1 second) for faster LACP negotiation
 
-
-## Vlans
+## VLANs
 vlans:
-  - name: external-test
-    tag: 2345
-    trunked_interface: 8.0  
+  - name: external-test                       # Name of VLAN (used in F5 configuration)
+    tag: 2345                                 # VLAN ID (802.1Q tag)
+    trunked_interface: 8.0                    # Assign VLAN 2345 as tagged on interface 8.0
+
   - name: internal-test
-    tag: 2346
-    native_interface: trunk-1 
+    tag: 2346                                 # VLAN ID
+    native_interface: trunk-1                # Assign VLAN 2346 as native (untagged) on trunk-1

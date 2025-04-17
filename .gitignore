@@ -7,3 +7,4 @@
 ## Exclude images
 */*iso*
 */*qcow2*
+f5-onboarding-all/roles/rSeries/files/*.qcow2*
