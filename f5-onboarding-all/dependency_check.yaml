@@ -1,0 +1,43 @@
+---
+
+- name: Check Required Dependencies
+  hosts: localhost  # Run this play on hosts defined by the 'f5hosts' group or variable
+  vars:
+    required_collections:
+      - f5networks.f5_modules
+      - f5networks.f5os
+  connection: local  # Use local connection to run tasks on the control node
+  gather_facts: false              # Skip standard system fact gathering (not needed for F5 API-based tasks)
+  any_errors_fatal: true           # If any host fails, stop the play for all (prevents partial onboarding)
+
+  tasks:
+    - name: Check if f5networks.f5_modules collection is installed
+      ansible.builtin.set_fact:
+        f5_modules_version: "{{ lookup('community.general.collection_version', item) }}"
+      ignore_errors: true  # Allow the playbook to continue even if the collection is not installed
+      register: f5_modules_check
+      loop: "{{ required_collections }}"  # Loop through each required collection
+
+    - name: Fail if f5networks.f5_modules collection is not installed
+      ansible.builtin.fail:
+        msg: "The required Ansible collection {{ item }} is not installed. Please install it using 'ansible-galaxy collection install {{ item }}'"
+      loop: "{{ required_collections }}"  # Loop through each required collection
+      when: f5_modules_check is failed  # Check if the collection installation failed
+
+    - name: Check if Paramiko is installed
+      ansible.builtin.command: python -m pip show paramiko
+      register: paramiko_check
+      changed_when: false  # This task does not change the system state
+      delegate_to: localhost  # Run this command on the control node
+
+    - name: Fail if Paramiko is not installed
+      ansible.builtin.fail:
+        msg: "Paramiko is not installed. Please install it using 'python -m pip install paramiko'."
+      when: paramiko_check.rc != 0
+
+    - name: Collection Results
+      ansible.builtin.debug:
+        msg: "The required Ansible collection {{ item }} is installed with version {{ f5_modules_check.results[index].ansible_facts.f5_modules_version }}."
+      loop: "{{ required_collections }}"  # Loop through each required collection
+      loop_control:
+        index_var: index  # Track loop index for cross-reference with results
