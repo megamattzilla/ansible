@@ -6,6 +6,9 @@
     required_collections:
       - f5networks.f5_modules
       - f5networks.f5os
+    validation_commands:
+      - "sshpass -V"
+      - "python -m pip show paramiko"
   connection: local  # Use local connection to run tasks on the control node
   gather_facts: false              # Skip standard system fact gathering (not needed for F5 API-based tasks)
   any_errors_fatal: true           # If any host fails, stop the play for all (prevents partial onboarding)
@@ -22,18 +25,30 @@
       ansible.builtin.fail:
         msg: "The required Ansible collection {{ item }} is not installed. Please install it using 'ansible-galaxy collection install {{ item }}'"
       loop: "{{ required_collections }}"  # Loop through each required collection
+      loop_control:
+        label: "{{ item }}"
       when: f5_modules_check is failed  # Check if the collection installation failed
 
-    - name: Check if Paramiko is installed
-      ansible.builtin.command: python -m pip show paramiko
-      register: paramiko_check
+    - name: Check if required commands are installed
+      ansible.builtin.command: "{{ item }}"
+      register: validation_check
       changed_when: false  # This task does not change the system state
       delegate_to: localhost  # Run this command on the control node
+      loop: "{{ validation_commands }}"  # Loop through each validation command
+      loop_control:
+        label: "{{ item }}"
+      ignore_errors: true  # Allow the playbook to continue even if a command is not found
 
-    - name: Fail if Paramiko is not installed
+    # - debug:
+    #     msg: "validation_check results: {{ validation_check.results }}"
+
+    - name: Fail if any required commands are not found
       ansible.builtin.fail:
-        msg: "Paramiko is not installed. Please install it using 'python -m pip install paramiko'."
-      when: paramiko_check.rc != 0
+        msg: "{{item.cmd}} is not installed. Please check the README.md'."
+      when: item.rc != 0
+      loop: "{{validation_check.results}}"
+      loop_control:
+        label: "{{ item.cmd }}"  # Use the command as the label for better readability
 
     - name: Collection Results
       ansible.builtin.debug:
@@ -41,3 +56,7 @@
       loop: "{{ required_collections }}"  # Loop through each required collection
       loop_control:
         index_var: index  # Track loop index for cross-reference with results
+
+    - name: Collection Results
+      ansible.builtin.debug:
+        msg: "ALL CHECKS PASSED"

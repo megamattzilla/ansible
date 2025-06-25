@@ -1,12 +1,13 @@
 ---
 
-- hosts: "{{ f5hosts }}"  # Run this play on hosts defined by the 'f5hosts' group or variable
+- name: F5 Onboarding Playbook
+  hosts: "{{ f5hosts | default ('f5_demo_rSeries')}}"  # Run this play on hosts defined by the 'f5hosts' group or variable
   vars:
-    provider:                                  
-      server: "{{ hostvars[inventory_hostname].ansible_host }}"  # IP or hostname of the current target F5 device
+    provider:
+      server: "{{ ansible_host }}"  # IP or hostname of the current target F5 device
       user: "{{ username }}"                                     # API username (from extra vars or inventory)
       password: "{{ password }}"                                 # API password (should come from a vault or secret manager)
-      validate_certs: false                                      # Disable SSL cert validation 
+      validate_certs: false                                      # Disable SSL cert validation
       server_port: 443                                           # HTTPS port for API access
       no_f5_teem: true                                           # Disable F5 phone-home telemetry (optional but good for privacy)
 
@@ -14,13 +15,12 @@
   any_errors_fatal: true           # If any host fails, stop the play for all (prevents partial onboarding)
 
   tasks:
+    - name: Launch iSeries Role
+      ansible.builtin.include_role:
+        name: iSeries            # Includes tasks from roles/iSeries/
+      when: platform_type == "iSeries"  # Run only if the target device is an iSeries
 
-  - name: Launch iSeries Role
-    ansible.builtin.include_role:
-      name: iSeries            # Includes tasks from roles/iSeries/
-    when: platform_type == "iSeries"  # Run only if the target device is an iSeries
-
-  - name: Launch rSeries Role
-    ansible.builtin.include_role:
-      name: rSeries            # Includes tasks from roles/rSeries/
-    when: platform_type == "rSeries"  # Run only if the target device is an rSeries
+    - name: Launch rSeries Role
+      ansible.builtin.include_role:
+        name: rSeries            # Includes tasks from roles/rSeries/
+      when: platform_type == "rSeries"  # Run only if the target device is an rSeries

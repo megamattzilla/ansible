@@ -7,23 +7,23 @@
     vlan_id: "{{ item.tag }}"      # VLAN ID (802.1Q tag)
   loop: "{{ vlans }}"              # Loop through each VLAN definition in 'vlans'
 
-- name: Create F5OS trunk (LAG) 
+- name: Create F5OS trunk (LAG)
   f5networks.f5os.f5os_lag:
     name: "{{ item.name }}"              # Trunk/LAG name
-    lag_type: "lacp"                     # Set trunking mode to LACP (Link Aggregation Control Protocol)
-    mode: "{{ item.lacp_mode }}"         # LACP mode: 'active' or 'passive'
-    native_vlan: "{{ item.native_vlan }}" # VLAN assigned as native (untagged)
-    trunk_vlans: "{{ item.trunked_vlans }}" # List of VLANs allowed on the trunk (tagged)
-    interval: "{{ item.lacp_timeout }}"  # LACP timeout: typically 'fast' or 'slow'
+    lag_type: "{{ item.lag_type }}"     # Set trunking mode to LACP (Link Aggregation Control Protocol)
+    mode: "{{ omit if item.lag_type == 'static' else item.lacp_mode }}"         # LACP mode: 'active' or 'passive'
+    native_vlan: "{{ item.native_vlan | default(omit) }}" # VLAN assigned as native (untagged)
+    trunk_vlans: "{{ item.trunked_vlans | default(omit) }}" # List of VLANs allowed on the trunk (tagged)
+    interval: "{{ omit if item.lag_type == 'static' else item.lacp_timeout }}"  # LACP timeout: typically 'fast' or 'slow'
     config_members: "{{ item.members }}" # List of physical interfaces to include in the trunk
-  loop: "{{ trunks }}"                   # Loop through all defined trunks
+  loop: "{{ lags | default([], true)  }}"                   # Loop through all defined lags
 
 - name: Assign vlans to interface
   f5networks.f5os.f5os_interface:
     name: "{{ item.name }}"              # Interface name (e.g., ethernet1/1)
     native_vlan: "{{ item.native_vlan }}" # VLAN applied as native (untagged)
     trunk_vlans: "{{ item.trunked_vlans }}" # Tagged VLANs assigned to this interface
-  loop: "{{ interfaces }}"               # Loop through each interface definition
+  loop: "{{ interfaces | default([], true) }}"               # Loop through each interface definition
 
 - name: Check for Tenant Image
   ansible.builtin.shell: sshpass -p "{{ root_password }}" ssh  "{{ root_username }}"@"{{ ansible_host }}" 'ls /var/F5/system/IMAGES/{{ item }}'
@@ -78,3 +78,16 @@
   when:
     - item.running_state == "deployed" # Only runs if the tenant's `running_state` is "deployed".
   loop: "{{ tenants }}" # Iterates over the `tenants` dictionary to perform the check for each tenant.
+
+# - name: Set new root password for fresh tenant
+#   ansible.builtin.expect:
+#     command: ssh -o StrictHostKeyChecking=no {{ root_username }}@{{ item.management_ip }}
+#     responses:
+#       "(?i)password:": "default"
+#       "current.*password:": "default"
+#       "new.*password:": "{{ root_password }}"
+#       "retype.*password:": "{{ root_password }}"
+#     timeout: 30
+#   delegate_to: localhost
+#   when:
+#   loop: "{{ tenants }}"
