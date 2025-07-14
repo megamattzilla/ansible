@@ -1,3 +1,5 @@
+🚧 This project is under construction and is not yet ready for production use. 🚧
+
 ### Ansible playbook to onboard common configurations for VE, iSeries, and rSeries devices.
 
 This playbook automates basic onboarding tasks for F5 BIG-IP and F5OS platforms, including VLANs, trunks, and interface settings.
@@ -9,18 +11,24 @@ It is intended to be modular, platform-aware, and beginner-friendly.
 - **General**
     - Add Hardware model to inventory.
     - document pre-work before ansible runs for each platform type
+    - add optional description for each task in playbook (including interface description only)
 
 - **VE (Virtual Edition)**
     - Placeholder for disk resize (used in cloud deployments)
     - All Declarative Onboarding (DO) reference tasks
 
 - **iSeries**
+    - Fix readme for skipping vlans in LAGs
     - check TMOS version and upgrade to gold image if needed
     - All Declarative Onboarding (DO) reference tasks
 
 - **rSeries**
+
+    - fix tenant upload failed when
+    - Skip vlans on interfaces if none defined.
     - Configure admin password on fresh tenant
     - DNS/NTP at F5OS level
+    - All vlans for tenant shortcut
     - Check F5os version and upgrade to gold image if needed [Docs link](https://clouddocs.f5.com/products/orchestration/ansible/devel/f5os/modules_3_0/f5os_system_image_import_module.html#f5os-system-image-import-module-3)
     - All DO reference tasks
     - Deferred to manual: **Note:** must be manually configured before Ansible runs
@@ -79,6 +87,14 @@ pip install paramiko
 If using SSH password, Install module `sshpass`:
 Installation varies per ansible host OS. Google `install sshpass {{ your operating system }}`
 
+### Run the Playbook
+```bash
+#All tasks
+ansible-playbook -i inventory_scratch all.yaml -e "f5hosts=f5_demo_rSeries" --vault-password-file ~/.secrets/vault.secret
+
+#Specific tasks:
+ansible-playbook -i inventory_scratch all.yaml -e "f5hosts=f5_demo_rSeries" --vault-password-file ~/.secrets/vault.secret --tags vlan,interface
+```
 
 
 Required vars:
@@ -88,6 +104,12 @@ TBD
 
 
 ### Changelog:
+- 7/14/25
+    - added loading f5secrets.yaml to manage secrets encrypted with ansible-vault
+    - rSeries:
+        - added ability to delete rSeries tenant (state: absent)
+        - added SNMP, DNS, NTP, LLDP configuration tasks
+        - added tags to all tasks
 - 6/25/25
     - updated dependency_check.yaml with all non-standard modules used in this playbook
     - fixed some broken documentation links (Thanks Mike!)

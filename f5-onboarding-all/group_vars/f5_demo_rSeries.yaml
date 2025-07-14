@@ -1,16 +1,11 @@
-f5hosts: "default"                      # Set F5 target group to "default" if not defined at runtime (prevents validation errors)
-username: "admin"                      # Username used for F5 API access (default for most F5 devices)
-root_username: "root"                  # Root-level username (used for shell/CLI access, not API)
-password: "{{ lookup('env','BIGIP_PASSWORD') }}"        # API password pulled from environment variable (more secure than hardcoding)
-root_password: "{{ lookup('env','BIGIP_ROOT_PASSWORD') }}" # Root password pulled from environment variable (used for SSH/SCP tasks)
-
 ## rSeries physical interface definitions (non-LAG vlan interfaces)
 interfaces: ## Comment out interfaces section below if you don't need to configure physical interfaces.
   - name: 7.0                          # Interface name (format: slot.port — here, slot 7, port 0)
+    description: INSIDE
     bundle: disabled                  # Interface bundle mode (must be set manually before Ansible runs)
-    native_vlan: 2346                 # VLAN assigned as native (untagged traffic)
-    trunked_vlans:                    # VLANs allowed as tagged on this interface
-      - 2345
+    # native_vlan:                  # VLAN assigned as native (untagged traffic). Comment out if not needed.
+    # trunked_vlans:                    #Type= List. VLANs allowed as tagged on this interface. Comment out if not needed.
+    #   - 2345
 
 ## rSeries LAG (Link Aggregation Group) definitions
 lags:
@@ -32,12 +27,53 @@ vlans:
   - name: internal-test
     tag: 2346
 
+## DNS Configuration
+dns_servers:
+  - "8.8.8.8"
+
+dns_domains:
+  - "lab.local"
+
+## NTP Configuration
+ntp_servers:
+  - server: "pool.ntp.org"
+    state: present
+
+## SNMP Configuration
+snmp_community:
+  - name: "{{ SNMP_COMMUNITY }}"      # Encrypted SNMP community string from vault
+    security_model:
+      - "v2c"
+
+snmp_mib:
+  syscontact: "admin@localhost"
+  syslocation: "KC"
+  sysname: "bigip01.example.local"
+
+## LLDP Configuration
+lldp_config:
+  enabled: true
+  system_name: "bigip01.example.local"
+  system_description: "Lab rSeries"
+  tx_interval: 30
+  tx_hold: 4
+  reinitiate_delay: 2
+  tx_delay: 2
+  max_neighbors_per_port: 10
+
+## System Banner Configuration
+system_config:
+  hostname: "bigip01.example.local"
+  motd: "This system is for serious stuff only."
+  login_banner: "This system is for serious stuff only."
+
 ## Name of tenant files to upload to rSeries from roles/rSeries/files/
 tenant_images:
   - BIGIP-17.5.0-0.0.15.ALL-F5OS.qcow2.zip.bundle  # F5 BIG-IP tenant image filename (must match exactly and be present in role's files/)
 
 tenants:
   - name: exampletenant
+    ansible_state: present                    # Desired state of the tenant (default to 'present') or absent to remove.
     image_name: BIGIP-17.5.0-0.0.15.ALL-F5OS.qcow2.zip.bundle
     management_ip: 192.168.1.43
     management_prefix: 24

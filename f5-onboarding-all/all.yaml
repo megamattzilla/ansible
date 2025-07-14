@@ -2,6 +2,8 @@
 
 - name: F5 Onboarding Playbook
   hosts: "{{ f5hosts | default ('f5_demo_rSeries')}}"  # Run this play on hosts defined by the 'f5hosts' group or variable
+  vars_files:
+    - f5secret.yaml  # Load encrypted vault file at play start
   vars:
     provider:
       server: "{{ ansible_host }}"  # IP or hostname of the current target F5 device
@@ -19,8 +21,10 @@
       ansible.builtin.include_role:
         name: iSeries            # Includes tasks from roles/iSeries/
       when: platform_type == "iSeries"  # Run only if the target device is an iSeries
+      tags: always
 
     - name: Launch rSeries Role
       ansible.builtin.include_role:
         name: rSeries            # Includes tasks from roles/rSeries/
       when: platform_type == "rSeries"  # Run only if the target device is an rSeries
+      tags: always
