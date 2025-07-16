@@ -23,15 +23,11 @@ It is intended to be modular, platform-aware, and beginner-friendly.
     - All Declarative Onboarding (DO) reference tasks
 
 - **rSeries**
-
-    - fix tenant upload failed when
-    - Skip vlans on interfaces if none defined.
-    - Configure admin password on fresh tenant
-    - DNS/NTP at F5OS level
+    - Configure admin and root password on fresh tenant
     - All vlans for tenant shortcut
-    - Check F5os version and upgrade to gold image if needed [Docs link](https://clouddocs.f5.com/products/orchestration/ansible/devel/f5os/modules_3_0/f5os_system_image_import_module.html#f5os-system-image-import-module-3)
     - All DO reference tasks
     - Deferred to manual: **Note:** must be manually configured before Ansible runs
+        - Check F5os version and upgrade to gold image if needed [Docs link](https://clouddocs.f5.com/products/orchestration/ansible/devel/f5os/modules_3_0/f5os_system_image_import_module.html#f5os-system-image-import-module-3)
         - [Configure Port groups:](https://clouddocs.f5.com/api/rseries-api/F5OS-A-1.0.0-cli.html#r5r10-config-mode-commands-portgroups)
         - [License rSeries Steps](https://techdocs.f5.com/en-us/f5os-a-1-3-0/f5-rseries-systems-administration-configuration/title-rseries-system-overview.html)
             - F5OS module `f5os_license` can be used to automate license installation, but requires internet access on F5 hardware.
@@ -96,6 +92,46 @@ ansible-playbook -i inventory_scratch all.yaml -e "f5hosts=f5_demo_rSeries" --va
 ansible-playbook -i inventory_scratch all.yaml -e "f5hosts=f5_demo_rSeries" --vault-password-file ~/.secrets/vault.secret --tags vlan,interface
 ```
 
+### Onboarding Stages to be performed by this codebase:
+
+1. Before Ansible runs:
+    - Hardware:
+        - must be powered on and accessible via mgmt IP on TCP 22/443
+        - admin/root password set
+        - licensed
+        - netHSM configured
+        - rSeries:
+            - running desired F5OS version
+            - interface bundling configured (if needed)
+    - VE:
+        - deployed with desired TMOS version
+        - accessible via mgmt IP on TCP 22/443
+        - admin password set
+
+1. Pre-System Onboarding:
+    - rSeries only:
+        - deploy TMOS tenant
+        - set admin/root passwords
+
+1. TMOS System Configuration:
+    - Hostname, MOTD, Login Banner
+    - Networking (VLANs, trunks, interfaces)
+    - Self-IP, Routes
+    - DNS, NTP, LLDP
+    - SNMP
+    - HTTPD TLS settings and idle timeout
+    - F5 module provisioning
+    - DB variables for restjavad, extram etc...
+    - HA (tentatively scoped)
+
+1. LTM Configuration:
+    - SNAT Pools
+    - Data Groups
+    - iRules
+    - SSL Certificates and Keys
+    - Virtual Servers
+
+1. SSLO Configuration
 
 Required vars:
 ```yaml
