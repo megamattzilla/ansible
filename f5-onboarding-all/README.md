@@ -10,7 +10,6 @@ It is intended to be modular, platform-aware, and beginner-friendly.
 #### Outstanding TODO:
 - **General**
     - Add Hardware model to inventory.
-    - document pre-work before ansible runs for each platform type
     - add optional description for each task in playbook (including interface description only)
 
 - **VE (Virtual Edition)**
@@ -22,16 +21,15 @@ It is intended to be modular, platform-aware, and beginner-friendly.
     - check TMOS version and upgrade to gold image if needed
     - All Declarative Onboarding (DO) reference tasks
 
-- **rSeries**
-    - Configure admin and root password on fresh tenant
-    - All vlans for tenant shortcut
-    - All DO reference tasks
-    - Deferred to manual: **Note:** must be manually configured before Ansible runs
-        - Check F5os version and upgrade to gold image if needed [Docs link](https://clouddocs.f5.com/products/orchestration/ansible/devel/f5os/modules_3_0/f5os_system_image_import_module.html#f5os-system-image-import-module-3)
-        - [Configure Port groups:](https://clouddocs.f5.com/api/rseries-api/F5OS-A-1.0.0-cli.html#r5r10-config-mode-commands-portgroups)
+- **rSeries host**
+- ✅ Done with all tasks currently scoped for rSeries host.
+    - Deferred to manual for now: **Note:** must be manually configured before Ansible runs
+        - [Upgrade to desired F5OS version](https://clouddocs.f5.com/products/orchestration/ansible/devel/f5os/modules_3_0/f5os_system_image_import_module.html#f5os-system-image-import-module-3)
+        - [Configure Port groups status:](https://clouddocs.f5.com/api/rseries-api/F5OS-A-1.0.0-cli.html#r5r10-config-mode-commands-portgroups)
         - [License rSeries Steps](https://techdocs.f5.com/en-us/f5os-a-1-3-0/f5-rseries-systems-administration-configuration/title-rseries-system-overview.html)
             - F5OS module `f5os_license` can be used to automate license installation, but requires internet access on F5 hardware.
-
+- **rSeries tenant**
+    - All DO reference tasks
 
 
 ---
@@ -86,10 +84,10 @@ Installation varies per ansible host OS. Google `install sshpass {{ your operati
 ### Run the Playbook
 ```bash
 #All tasks
-ansible-playbook -i inventory_scratch all.yaml -e "f5hosts=f5_demo_rSeries" --vault-password-file ~/.secrets/vault.secret
+ansible-playbook -i inventory all.yaml -e "f5hosts=f5_demo_rSeries_A" --vault-password-file ~/.secrets/vault.secret
 
 #Specific tasks:
-ansible-playbook -i inventory_scratch all.yaml -e "f5hosts=f5_demo_rSeries" --vault-password-file ~/.secrets/vault.secret --tags vlan,interface
+ansible-playbook -i inventory all.yaml -e "f5hosts=f5_demo_rSeries_A" --vault-password-file ~/.secrets/vault.secret --tags vlan,interface
 ```
 
 ### Onboarding Stages to be performed by this codebase:
@@ -110,10 +108,12 @@ ansible-playbook -i inventory_scratch all.yaml -e "f5hosts=f5_demo_rSeries" --va
 
 1. Pre-System Onboarding:
     - rSeries only:
+        - rSeries host system configuration
         - deploy TMOS tenant
         - set admin/root passwords
 
 1. TMOS System Configuration:
+    - User accounts
     - Hostname, MOTD, Login Banner
     - Networking (VLANs, trunks, interfaces)
     - Self-IP, Routes
@@ -140,6 +140,19 @@ TBD
 
 
 ### Changelog:
+- 7/25/25
+    - Added idempotent admin and root default password reset for rSeries tenants.
+    - Split rSeries role into host and tenant playbooks.
+        - `host.yaml` now contains tasks for the rSeries host.
+        - `tenant.yaml` contains tasks for the rSeries tenant.
+    - Fixed issue where if the rSeries tenant variables are set to ansible_state=absent but running_state=deployed the f5os_tenant_wait task would run erroneously.
+    - added rSeries tenant vlan shortcut:
+        - Added `vlans: ALL` to tenant definition to use all vlans defined in `vlans` variable.
+        - This allows the tenant to use all VLANs defined in the `vlans` variable without needing to specify each VLAN individually.
+    - Added rSeries tenant as a child group of the rSeries host.
+        - The tenant will likely share variables with the rSeries host, so it is defined as a child group for now.
+    - documented pre-work before ansible runs for each platform type under "Onboarding Stages to be performed by this codebase" in README.md
+
 - 7/14/25
     - added loading f5secrets.yaml to manage secrets encrypted with ansible-vault
     - rSeries:

@@ -1,7 +1,7 @@
 ---
 
 - name: F5 Onboarding Playbook
-  hosts: "{{ f5hosts | default ('f5_demo_rSeries')}}"  # Run this play on hosts defined by the 'f5hosts' group or variable
+  hosts: "{{ f5hosts | default ('f5_demo_rSeries_A')}}"  # Run this play on hosts defined by the 'f5hosts' group or variable
   vars_files:
     - f5secret.yaml  # Load encrypted vault file at play start
   vars:
@@ -26,5 +26,5 @@
     - name: Launch rSeries Role
       ansible.builtin.include_role:
         name: rSeries            # Includes tasks from roles/rSeries/
-      when: platform_type == "rSeries"  # Run only if the target device is an rSeries
+      when: platform_type == "rSeries" or platform_type == "rSeries_tenant"  # Run for rSeries or rSeries_tenant devices
       tags: always

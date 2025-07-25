@@ -1,10 +1,16 @@
-[f5-demo-iSeries]                             # Group name for iSeries BIG-IP devices
-bigip01.example.local ansible_host=192.168.1.1 platform_type=iSeries  
+[f5_demo_iSeries]                             # Group name for iSeries BIG_IP devices
+bigip01.example.local ansible_host=192.168.1.1 platform_type=iSeries
 # Host alias: 'bigip01.example.local'
 # ansible_host: actual IP address to connect to (used by Ansible internally)
-# platform_type: custom variable used to trigger iSeries-specific logic in playbooks
+# platform_type: custom variable used to trigger iSeries_specific logic in playbooks
 
-[f5-demo-rSeries]                             # Group name for rSeries BIG-IP devices
-bigip01.example.local ansible_host=192.168.1.2 platform_type=rSeries  
+[f5_demo_rSeries_A]                             # Group name for rSeries BIG_IP devices
+bigip01.example.local ansible_host=192.168.1.2 platform_type=rSeries
 # Host alias: same name used, but different ansible_host IP for a separate rSeries device
-# platform_type: custom variable to trigger rSeries-specific roles and tasks
+# platform_type: custom variable to trigger rSeries_specific roles and tasks
+
+[f5_demo_rSeries_A:children]
+rSeries_tenants_A
+
+[rSeries_tenants_A]
+exampletenant ansible_host=192.168.1.20 platform_type=rSeries_tenant

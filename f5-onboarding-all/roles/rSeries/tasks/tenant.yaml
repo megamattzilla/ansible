@@ -1,0 +1,59 @@
+## Because this role is mainly for f5os modules, any f5networks modules need an override for   vars: ansible_connection: local
+
+- name: Test admin user authentication
+  f5networks.f5_modules.bigip_device_info:
+    gather_subset:
+      - users
+    provider: "{{ provider }}"
+  delegate_to: localhost
+  register: admin_auth_test
+  vars:
+    ansible_connection: local
+  ignore_errors: true
+  when: username == 'admin'
+  tags:
+    - auth
+
+- name: Change default admin password
+  ansible.builtin.uri:
+    url: "https://{{ ansible_host }}/mgmt/shared/authz/users/admin"
+    method: PATCH
+    body: '{"oldPassword":"admin","password":"{{ password }}"}'
+    body_format: json
+    validate_certs: false
+    force_basic_auth: true
+    user: admin
+    password: admin
+    headers:
+      Content-Type: "application/json"
+  delegate_to: local
+  when:
+    - admin_auth_test.failed is true
+    - username == 'admin'
+  tags:
+    - auth
+
+
+- name: Test root authentication
+  ansible.builtin.shell: sshpass -p "{{ root_password }}" ssh -o StrictHostKeyChecking=no  "{{ root_username }}"@"{{ ansible_host }}" 'whoami'
+  vars:
+    ansible_connection: local            # Run this command from the control node, not the remote device
+  delegate_to: localhost                 # Force task execution on localhost
+  register: test_root_auth          # Store results of the image check for later use
+  ignore_errors: true                    # Don’t fail if the file is not found (expected sometimes)
+  changed_when: 1 == 2                   # Mark as "not changed" (this task only checks, doesn't alter state)
+  tags:
+    - auth
+
+- name: Change default root password
+  f5networks.f5_modules.bigip_user:
+    username_credential: root
+    password_credential: "{{ root_password }}"
+    provider: "{{ provider }}"
+  vars:
+    ansible_connection: local
+  delegate_to: localhost
+  when:
+    - test_root_auth.failed is true
+  tags:
+    - auth
