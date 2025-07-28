@@ -1,0 +1,35 @@
+## Tenant Specific Vars only
+
+## Extra TMOS Users to create. Comment out if not needed.
+GRPVAR_users:
+  - username: serviceaccount
+    password_var: serviceaccount_password   # Pass the variable name from ansible vault as a string, not interpolated
+    shell: bash
+    partition_access:
+      - all:admin
+    ansible_state: present
+
+## TMOS dataplane routes to creaete. Comment out if not needed.
+GRPVAR_routes:
+  - name: default
+    destination: 0.0.0.0
+    netmask: 0.0.0.0
+    gateway_address: 192.168.254.254
+
+GRPVAR_modules:
+  - name: ltm
+    level: nominal
+
+GRPVAR_tmos_db:
+  icrd.timeout: 600
+  restnoded.timeout: 600
+  restjavad.timeout: 600
+  provision.tomcat.extramb: 256
+  provision.restjavad.extramb: 1024
+  ui.advisory.enabled: "true"
+  ui.advisory.color: "red"
+  ui.system.preferences.recordsperscreen: "250"
+  big3d.minimum.tls.version: "TLSv1.2"
+  ui.advisory.text: "{{ HOSTVAR_hostname }} - Managed by Automation!"
+  ## Keep provision.extramb last.
+  provision.extramb: 2048 #Try to keep this last in list- will restart services.

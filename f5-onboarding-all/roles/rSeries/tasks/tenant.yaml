@@ -12,7 +12,9 @@
   ignore_errors: true
   when: username == 'admin'
   tags:
-    - auth
+    - never
+    - day0
+    - users
 
 - name: Change default admin password
   ansible.builtin.uri:
@@ -31,8 +33,25 @@
     - admin_auth_test.failed is true
     - username == 'admin'
   tags:
-    - auth
+    - never
+    - day0
+    - users
 
+- name: Change admin shell to bash
+  f5networks.f5_modules.bigip_user:
+    username_credential: admin
+    shell: bash
+    provider: "{{ provider }}"
+  vars:
+    ansible_connection: local
+  delegate_to: localhost
+  when:
+    - admin_auth_test.failed is false
+    - username == 'admin'
+  tags:
+    - never
+    - day0
+    - users
 
 - name: Test root authentication
   ansible.builtin.shell: sshpass -p "{{ root_password }}" ssh -o StrictHostKeyChecking=no  "{{ root_username }}"@"{{ ansible_host }}" 'whoami'
@@ -43,7 +62,9 @@
   ignore_errors: true                    # Don’t fail if the file is not found (expected sometimes)
   changed_when: 1 == 2                   # Mark as "not changed" (this task only checks, doesn't alter state)
   tags:
-    - auth
+    - never
+    - day0
+    - users
 
 - name: Change default root password
   f5networks.f5_modules.bigip_user:
@@ -56,4 +77,6 @@
   when:
     - test_root_auth.failed is true
   tags:
-    - auth
+    - never
+    - day0
+    - users

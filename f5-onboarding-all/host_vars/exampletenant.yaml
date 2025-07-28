@@ -1,0 +1,11 @@
+## Host Specific Vars only
+
+HOSTVAR_hostname: exampletenant.local #Must be FQDN
+
+## TMOS Self-IPs to be created. comment out if not needed.
+HOSTVAR_self_ips:
+  - name: external
+    address: 192.168.254.1
+    netmask: 255.255.255.0
+    vlan: external-test2
+    traffic_group: traffic-group-local-only

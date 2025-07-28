@@ -1,9 +1,132 @@
-- name: Create vlans and assign to interfaces
-  f5networks.f5_modules.bigip_vlan:
-    tagged_interface: "{{ item.trunked_interface | default(omit) }}"   # Apply VLAN as tagged to this interface (omit if not defined)
-    untagged_interface: "{{ item.native_interface | default(omit) }}"  # Apply VLAN as untagged (native) to this interface (omit if not defined)
-    name: "{{ item.name }}"                                            # VLAN name (unique identifier in BIG-IP)
-    tag: "{{ item.tag }}"                                              # VLAN ID (802.1Q tag)
-    provider: "{{ provider }}"                                         # Connection info for the BIG-IP API
-  delegate_to: localhost                                               # Run this task from the control node using API, not SSH to device
-  loop: "{{ vlans }}"                                                  # Iterate over each VLAN entry in the 'vlans' list
+- name: Create TMOS Users
+  f5networks.f5_modules.bigip_user:
+    username_credential: "{{ item.username }}"
+    password_credential: "{{ lookup('vars', item.password_var | string) }}"
+    provider: "{{ provider }}"
+    partition_access: "{{ item.partition_access }}"
+    shell: "{{ item.shell }}"
+    state: "{{ item.ansible_state }}"
+  loop: "{{ GRPVAR_users | default([], true) }}"
+  tags:
+    - never
+    - day0
+    - extra-users
+
+## Set some global settings- but not all DO system settings are available
+- name: Set global settings
+  f5networks.f5_modules.bigip_sys_global:
+    gui_setup: false
+    security_banner: true
+    banner_text: "{{ system_config.login_banner }}"
+    gui_audit: true
+    provider: "{{ provider }}"
+  tags:
+    - global-settings
+
+## Will come back to later- need to get SSH key auth working.
+# - name: Set global system tmsh configuration
+#   ansible.builtin.command: |
+#     set -eu # exit immediately on error
+#     tmsh modify /sys software update auto-phonehome disabled
+#     tmsh modify /sys software update auto-check disabled
+##     tmsh modify sys global-settings gui-audit enabled
+#     tmsh modify sys daemon-log-settings mcpd audit enabled
+#     tmsh modify cli global-settings audit enabled
+#   delegate_to: "{{ inventory_hostname }}"
+#   vars:
+#     ansible_connection: ssh
+
+- name: Set the hostname of the BIG-IP
+  f5networks.f5_modules.bigip_hostname:
+    hostname: "{{ HOSTVAR_hostname }}"
+    provider: "{{ provider }}"
+  tags:
+    - hostname
+
+- name: Set HTTPD Params
+  f5networks.f5_modules.bigip_device_httpd:
+    ssl_protocols: "{{ HTTPD_PROTOCOL_LIST }}"
+    auth_pam_idle_timeout: "{{ HTTPD_IDLE_TIMEOUT }}"
+    provider: "{{ provider }}"
+  tags:
+    - httpd
+
+# Configure system DNS servers.
+- name: Configure system DNS
+  f5networks.f5_modules.bigip_device_dns:
+    name_servers: "{{ dns_servers }}"              # List of DNS server IPs
+    search: "{{ dns_domains }}"                # DNS search domains
+    provider: "{{ provider }}"                # F5 API credentials and connection info
+  tags:
+    - dns
+
+
+- name: Configure NTP
+  f5networks.f5_modules.bigip_device_ntp:
+    timezone: "{{ timezone }}" # Default timezone for F5 devices
+    ntp_servers: "{{ ntp_servers | map(attribute='server') | list }}"              # List of NTP server IPs
+    provider: "{{ provider }}"                # F5 API credentials and connection info
+  tags:
+    - ntp
+
+- name: Create Self IP
+  f5networks.f5_modules.bigip_selfip:
+    address: "{{ item.address }}"
+    name: "{{ item.name }}"
+    netmask: "{{ item.netmask }}"
+    vlan: "{{ item.vlan }}"
+    traffic_group: "{{ item.traffic_group }}"
+    provider: "{{ provider }}"
+  loop: "{{ HOSTVAR_self_ips | default([], true) }}"
+  tags:
+    - self-ip
+
+- name: Create TMOS route
+  f5networks.f5_modules.bigip_static_route:
+    destination: "{{ item.destination }}"
+    netmask: "{{ item.netmask }}"
+    name: "{{ item.name }}"
+    gateway_address: "{{ item.gateway_address }}"
+    provider: "{{ provider }}"
+  loop: "{{ GRPVAR_routes | default([], true) }}"
+  tags:
+    - routes
+
+## Save configuration before provisioning
+- name: Save config
+  f5networks.f5_modules.bigip_config:
+    save: true
+    provider: "{{ provider }}"
+
+- name: Provision TMOS modules
+  f5networks.f5_modules.bigip_provision:
+    module: "{{ item.name }}"
+    level: "{{ item.level }}"
+    provider: "{{ provider }}"
+  register: provision_result
+  async: 45
+  poll: 20
+  retries: 3
+  delay: 10
+  until: provision_result is not failed
+  loop: "{{ GRPVAR_modules }}"
+  tags:
+    - never
+    - day0
+    - provision-modules
+
+
+- name: Update TMOS system DBs
+  f5networks.f5_modules.bigip_sys_db:
+    key: "{{ item.key }}"
+    value: "{{ item.value }}"
+    provider: "{{ provider }}"
+  register: bigip_sys_db_result
+  retries: 3
+  delay: 20
+  until: bigip_sys_db_result is not failed
+  loop: "{{ GRPVAR_tmos_db | dict2items }}"
+  tags:
+    - never
+    - day0
+    - bigip_sys_db

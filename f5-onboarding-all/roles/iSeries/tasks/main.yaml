@@ -20,3 +20,4 @@
 - name: Launch Common Role
   ansible.builtin.include_role:
     name: Common                            # Includes tasks from roles/Common (typically shared config steps)
+    tasks_from: assign_vlan                # Specify which task file to run from the Common role

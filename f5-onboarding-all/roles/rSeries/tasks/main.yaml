@@ -1,7 +1,9 @@
 - name: Include tasks for rSeries Tenant
   ansible.builtin.include_tasks: tenant.yaml
   when: platform_type == "rSeries_tenant"
+  tags: always
 
 - name: Include tasks for rSeries Host
   ansible.builtin.include_tasks: host.yaml
   when: platform_type == "rSeries"
+  tags: always

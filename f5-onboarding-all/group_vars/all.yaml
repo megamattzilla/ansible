@@ -1,0 +1,5 @@
+## Global Variables that will be overwritten by group, host, task vars
+
+HTTPD_PROTOCOL_LIST: "all -SSLv2 -SSLv3 -TLSv1 -TLSv1.1"
+HTTPD_IDLE_TIMEOUT: 1200
+timezone: UTC
